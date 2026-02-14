@@ -10,6 +10,7 @@ import HowItWorks from './components/HowItWorks';
 import AboutPage from './components/AboutPage';
 import ContactPage from './components/ContactPage';
 import PrivacyPolicy from './components/PrivacyPolicy';
+import AdBanner from './components/AdBanner';
 import { Language, translations } from './translations';
 
 interface LanguageContextType {
@@ -192,20 +193,24 @@ const App: React.FC = () => {
       <Router>
         <div className="min-h-screen flex flex-col">
           <Navbar />
-          <main className="flex-grow">
-            <Routes>
-              <Route path="/" element={
-                <>
-                  <Hero />
-                  <HowItWorks />
-                  <ToolGrid />
-                </>
-              } />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="/tool/:id" element={<ToolPage />} />
-            </Routes>
+          <main className="flex-grow flex flex-col">
+            <div className="flex-grow">
+              <Routes>
+                <Route path="/" element={
+                  <>
+                    <Hero />
+                    <HowItWorks />
+                    <ToolGrid />
+                  </>
+                } />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/tool/:id" element={<ToolPage />} />
+              </Routes>
+            </div>
+            {/* Advertisement Banner is now persistent on every page at the bottom of the content area */}
+            <AdBanner />
           </main>
           <Footer />
         </div>
