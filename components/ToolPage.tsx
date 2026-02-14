@@ -33,10 +33,7 @@ const ToolPage: React.FC = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
   
   const [files, setFiles] = useState<File[]>([]);
-  const [splitMode, setSplitMode] = useState<'range' | 'individual'>('range');
   const [imgFormat, setImgFormat] = useState<'jpeg' | 'png'>('jpeg');
-  const [startPage, setStartPage] = useState<number>(1);
-  const [endPage, setEndPage] = useState<number>(1);
   const [totalPagesFound, setTotalPagesFound] = useState<number>(1);
   const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -48,12 +45,10 @@ const ToolPage: React.FC = () => {
   const toolTitle = tool ? t.tools[tool.titleKey] : '';
   const toolDesc = tool ? t.tools[tool.descKey] : '';
 
-  // Fix: Define the missing 'usesHighFidelityEngine' variable
   const usesHighFidelityEngine = useMemo(() => {
     return ['pdf-to-word', 'word-to-pdf', 'compress-pdf', 'pdf-to-img'].includes(tool?.id || '');
   }, [tool?.id]);
 
-  // Get total pages of PDF when selected for Split Tool
   useEffect(() => {
     if (tool?.id === 'split-pdf' && files.length > 0) {
       const getPages = async () => {
@@ -61,7 +56,6 @@ const ToolPage: React.FC = () => {
           const arrayBuffer = await files[0].arrayBuffer();
           const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
           setTotalPagesFound(pdf.numPages);
-          setEndPage(pdf.numPages);
         } catch (e) {
           console.error("Error reading PDF pages:", e);
         }
@@ -195,7 +189,6 @@ const ToolPage: React.FC = () => {
         return;
       }
 
-      // Handle standard tools
       if (tool.id === 'img-to-pdf') {
         endpoint = API_ENDPOINTS.IMG_TO_PDF;
         files.forEach(f => formData.append('files', f));
@@ -212,28 +205,22 @@ const ToolPage: React.FC = () => {
         endpoint = API_ENDPOINTS.WORD_TO_PDF;
         formData.append('file', files[0]);
       } else if (tool.id === 'split-pdf') {
-        if (splitMode === 'range') {
-          endpoint = API_ENDPOINTS.SPLIT_PDF_RANGE;
-          // Backend class expects 'File' (capital F)
-          formData.append('File', files[0]);
-          formData.append('StartPage', startPage.toString());
-          formData.append('EndPage', endPage.toString());
-        } else {
-          endpoint = API_ENDPOINTS.SPLIT_PDF;
-          // Backend method expects 'file' (lowercase f)
-          formData.append('file', files[0]);
-        }
+        endpoint = API_ENDPOINTS.SPLIT_PDF;
+        formData.append('file', files[0]);
       }
 
       if (endpoint) {
         setProcessing(prev => ({ ...prev, progress: 20, message: usesHighFidelityEngine ? t.toolPage.hiFiEngine : t.toolPage.uploading }));
         const response = await fetch(endpoint, { method: 'POST', body: formData, signal: abortControllerRef.current.signal });
-        if (!response.ok) throw new Error(await response.text() || 'Server processing failed.');
+        
+        if (!response.ok) {
+           const errText = await response.text();
+           throw new Error(errText || 'Server processing failed.');
+        }
         
         setProcessing(prev => ({ ...prev, progress: 70, message: t.toolPage.finalizing }));
 
-        // Specialized handling for Split All Pages (Individual) which returns JSON
-        if (tool.id === 'split-pdf' && splitMode === 'individual') {
+        if (tool.id === 'split-pdf') {
           const data = await response.json();
           if (!data.pages || !Array.isArray(data.pages)) throw new Error('Invalid response from split engine.');
           
@@ -243,8 +230,6 @@ const ToolPage: React.FC = () => {
           for (let i = 0; i < data.pages.length; i++) {
             const pdfBlob = base64ToBlob(data.pages[i]);
             zip.file(`Page_${i + 1}.pdf`, pdfBlob);
-            
-            // Generate a quick preview for the gallery of the first few
             if (i < 10) {
               const preview = await generateAllPreviews(pdfBlob);
               if (preview[0]) previews.push(preview[0]);
@@ -264,14 +249,13 @@ const ToolPage: React.FC = () => {
           return;
         }
 
-        // Standard File Response
         const contentType = response.headers.get('content-type');
         const blob = await response.blob();
         const downloadUrl = URL.createObjectURL(blob);
 
         if (contentType?.includes('wordprocessingml') || contentType?.includes('msword')) {
           setProcessing({ status: 'success', progress: 100, downloadUrl, message: t.toolPage.successTitle, resultType: 'word' });
-        } else if (contentType?.includes('pdf') || contentType?.includes('application/octet-stream')) {
+        } else {
           const previews = await generateAllPreviews(blob);
           setProcessing({ 
             status: 'success', 
@@ -284,8 +268,6 @@ const ToolPage: React.FC = () => {
             originalSize: originalTotalSize, 
             compressedSize: blob.size 
           });
-        } else {
-          setProcessing({ status: 'success', progress: 100, downloadUrl, message: t.toolPage.successTitle, resultType: 'pdf' });
         }
       }
     } catch (error: any) {
@@ -308,9 +290,9 @@ const ToolPage: React.FC = () => {
     <button
       disabled={files.length === 0}
       onClick={handleProcess}
-      className={`px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl flex items-center justify-center group ${files.length > 0 ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200 hover:scale-[1.05] active:scale-95' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+      className={`px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center group ${files.length > 0 ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200 hover:scale-[1.05] active:scale-95' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
     >
-      <Play className="mr-2 w-5 h-5 fill-current" />
+      <Play className="mr-2 w-4 h-4 fill-current" />
       {t.toolPage.processNow}
     </button>
   );
@@ -359,53 +341,14 @@ const ToolPage: React.FC = () => {
               
               {tool.id === 'split-pdf' && files.length > 0 && (
                 <div className="mt-12 p-10 bg-purple-50/40 rounded-[2.5rem] border border-purple-100">
-                  <div className="flex items-center space-x-4 mb-8">
-                    <button 
-                      onClick={() => setSplitMode('range')} 
-                      className={`flex-1 flex items-center justify-center p-5 rounded-2xl border-2 transition-all font-black text-xs uppercase tracking-[0.2em] ${splitMode === 'range' ? 'bg-white border-purple-500 shadow-xl text-purple-600 -translate-y-1' : 'bg-white/50 border-transparent text-gray-400 hover:bg-white'}`}
-                    >
-                      <Scissors className="w-4 h-4 mr-2" /> Split Range
-                    </button>
-                    <button 
-                      onClick={() => setSplitMode('individual')} 
-                      className={`flex-1 flex items-center justify-center p-5 rounded-2xl border-2 transition-all font-black text-xs uppercase tracking-[0.2em] ${splitMode === 'individual' ? 'bg-white border-purple-500 shadow-xl text-purple-600 -translate-y-1' : 'bg-white/50 border-transparent text-gray-400 hover:bg-white'}`}
-                    >
-                      <List className="w-4 h-4 mr-2" /> Every Page
-                    </button>
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="bg-white border-2 border-purple-500 shadow-xl text-purple-600 p-5 rounded-2xl flex-1 flex items-center justify-center font-black text-xs uppercase tracking-[0.2em]">
+                      <List className="w-4 h-4 mr-2" /> Extracting All Pages
+                    </div>
                   </div>
-
-                  {splitMode === 'range' && (
-                    <div className="grid grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-4 duration-500">
-                      <div>
-                        <label className="block text-[10px] font-black text-purple-400 uppercase tracking-widest mb-3 ml-2">Start Page</label>
-                        <input 
-                          type="number" 
-                          min={1} 
-                          max={totalPagesFound}
-                          value={startPage}
-                          onChange={(e) => setStartPage(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-full bg-white border-2 border-purple-100 rounded-2xl p-4 font-black text-gray-900 focus:outline-none focus:border-purple-500 transition-colors"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-black text-purple-400 uppercase tracking-widest mb-3 ml-2">End Page</label>
-                        <input 
-                          type="number" 
-                          min={startPage} 
-                          max={totalPagesFound}
-                          value={endPage}
-                          onChange={(e) => setEndPage(Math.min(totalPagesFound, Math.max(startPage, parseInt(e.target.value) || startPage)))}
-                          className="w-full bg-white border-2 border-purple-100 rounded-2xl p-4 font-black text-gray-900 focus:outline-none focus:border-purple-500 transition-colors"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {splitMode === 'individual' && (
-                    <div className="p-4 text-center animate-in fade-in slide-in-from-top-4 duration-500">
-                       <p className="text-purple-900 font-bold text-sm">We will extract all {totalPagesFound} pages and package them into a ZIP archive.</p>
-                    </div>
-                  )}
+                  <div className="p-4 text-center animate-in fade-in slide-in-from-top-4 duration-500">
+                    <p className="text-purple-900 font-bold text-sm">We will extract all {totalPagesFound} pages and package them into a ZIP archive.</p>
+                  </div>
                 </div>
               )}
 
@@ -414,16 +357,6 @@ const ToolPage: React.FC = () => {
                   <button onClick={() => setImgFormat('jpeg')} className={`p-5 rounded-2xl border-2 transition-all font-black text-sm uppercase tracking-widest ${imgFormat === 'jpeg' ? 'border-orange-500 bg-white shadow-xl translate-y-[-2px]' : 'border-transparent bg-white/50 hover:bg-white'}`}>{t.toolPage.jpgFormat}</button>
                   <button onClick={() => setImgFormat('png')} className={`p-5 rounded-2xl border-2 transition-all font-black text-sm uppercase tracking-widest ${imgFormat === 'png' ? 'border-orange-500 bg-white shadow-xl translate-y-[-2px]' : 'border-transparent bg-white/50 hover:bg-white'}`}>{t.toolPage.pngFormat}</button>
                 </div>
-              )}
-
-              {files.length === 0 && (
-                <button
-                  disabled={true}
-                  className="w-full mt-12 py-6 rounded-[1.75rem] font-black text-xl tracking-wide transition-all shadow-2xl flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed opacity-50"
-                >
-                  <Play className="mr-3 w-7 h-7 fill-current" />
-                  {t.toolPage.processNow}
-                </button>
               )}
             </div>
           )}
@@ -586,7 +519,7 @@ const ToolPage: React.FC = () => {
                             <div className="relative group/page">
                               <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-auto max-w-3xl rounded-[2rem] shadow-2xl border border-white" />
                               <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest opacity-0 group-hover/page:opacity-100 transition-opacity">
-                                Page {idx + 1}
+                                Item {idx + 1}
                               </div>
                             </div>
                           </div>
@@ -602,7 +535,7 @@ const ToolPage: React.FC = () => {
                       {processing.downloadUrl && (
                           <a 
                             href={processing.downloadUrl} 
-                            download={processing.resultType === 'zip' ? "Extracted_Result.zip" : "Result.pdf"}
+                            download={processing.resultType === 'zip' ? "Result_Archive.zip" : "Result_Document.pdf"}
                             className="w-full py-5 bg-blue-600 text-white rounded-[1.75rem] font-black text-xl flex items-center justify-center shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all transform hover:-translate-y-1"
                           >
                               <Download className="w-7 h-7 mr-4" /> Download Result

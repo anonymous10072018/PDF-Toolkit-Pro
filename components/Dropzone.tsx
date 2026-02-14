@@ -119,21 +119,18 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, accept = "*", mult
 
       {selectedFiles.length > 0 && (
         <div className="mt-12 space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center space-x-4">
-              <h4 className="text-sm font-black text-gray-500 uppercase tracking-widest">Selected Files ({selectedFiles.length})</h4>
-              <button onClick={() => { setSelectedFiles([]); onFilesSelected([]); }} className="text-xs text-red-500 hover:text-red-600 font-black uppercase tracking-widest transition-colors hover:underline">Clear All</button>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100/50">
+            <div className="flex flex-col">
+              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Queue Overview</h4>
+              <div className="flex items-center space-x-4">
+                <span className="text-lg font-black text-gray-900">Selected Files ({selectedFiles.length})</span>
+                <button onClick={() => { setSelectedFiles([]); onFilesSelected([]); }} className="text-[10px] text-red-500 hover:text-red-600 font-black uppercase tracking-widest transition-colors hover:underline">Clear All</button>
+              </div>
             </div>
             
-            {/* Desktop Action Button Slot */}
-            <div className="hidden sm:block">
+            <div className="flex items-center">
               {actionButton}
             </div>
-          </div>
-
-          {/* Mobile Action Button Slot (Visible only when files exist) */}
-          <div className="block sm:hidden">
-            {actionButton}
           </div>
 
           <div className="space-y-3">
