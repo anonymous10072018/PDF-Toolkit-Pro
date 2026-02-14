@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useLanguage } from '../App';
+import { Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
 
 const Hero: React.FC = () => {
   const { t } = useLanguage();
@@ -13,36 +14,53 @@ const Hero: React.FC = () => {
   };
 
   return (
-    <section className="relative overflow-hidden pt-20 pb-16 lg:pt-32 lg:pb-24 bg-white">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none overflow-hidden -z-10">
-        <div className="absolute -top-[10%] left-[20%] w-[40%] h-[40%] bg-blue-100 rounded-full blur-[120px] opacity-60 animate-pulse"></div>
-        <div className="absolute bottom-[10%] right-[10%] w-[30%] h-[30%] bg-indigo-100 rounded-full blur-[100px] opacity-50"></div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="inline-flex items-center space-x-2 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full mb-8">
-          <span className="flex h-2 w-2 rounded-full bg-blue-600"></span>
-          <span className="text-blue-700 text-xs font-semibold uppercase tracking-wider">{t.hero.badge}</span>
+    <section className="relative pt-16 pb-28 lg:pt-24 lg:pb-40 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+        <div className="inline-flex items-center space-x-3 bg-white/80 backdrop-blur-md border border-white/90 px-5 py-2.5 rounded-full mb-12 shadow-[0_8px_32px_rgba(0,0,0,0.04)] animate-in fade-in slide-in-from-bottom-4 duration-1000">
+          <div className="flex h-5 w-5 rounded-full bg-blue-600/10 items-center justify-center">
+            <Sparkles className="w-3 h-3 text-blue-600 animate-pulse" />
+          </div>
+          <span className="text-blue-900 text-[10px] font-black uppercase tracking-[0.25em]">{t.hero.badge}</span>
         </div>
-        <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 mb-6 tracking-tight">
-          {t.hero.title} <span className="text-blue-600 underline decoration-blue-200 underline-offset-8">{t.hero.titleHighlight}</span><br className="hidden md:block" /> {t.hero.titleSub}
+        
+        <h1 className="text-7xl md:text-9xl font-black text-gray-900 mb-10 tracking-tighter leading-[0.85] animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          {t.hero.title} <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-800 animate-gradient">
+            {t.hero.titleHighlight}
+          </span><br />
+          <span className="text-gray-900/30">{t.hero.titleSub}</span>
         </h1>
-        <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+
+        <p className="text-xl md:text-2xl text-gray-500 mb-16 max-w-2xl mx-auto leading-relaxed font-semibold animate-in fade-in slide-in-from-bottom-12 duration-1000">
           {t.hero.subtitle}
         </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+
+        <div className="flex flex-col sm:flex-row items-center justify-center space-y-5 sm:space-y-0 sm:space-x-8 animate-in fade-in slide-in-from-bottom-16 duration-1000">
           <button 
             onClick={() => scrollToSection('tools')}
-            className="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+            className="w-full sm:w-auto px-12 py-6 bg-gray-900 text-white rounded-[1.75rem] font-black text-xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.2)] hover:bg-blue-600 hover:shadow-blue-200 transition-all transform hover:-translate-y-2 active:scale-95 flex items-center justify-center group"
           >
             {t.hero.explore}
+            <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-2 transition-transform" />
           </button>
           <button 
             onClick={() => scrollToSection('how-it-works')}
-            className="w-full sm:w-auto px-8 py-4 bg-white text-gray-900 border border-gray-200 rounded-2xl font-bold hover:bg-gray-50 transition-all active:scale-95 shadow-sm"
+            className="w-full sm:w-auto px-12 py-6 glass-morphism text-gray-900 rounded-[1.75rem] font-black text-xl hover:bg-white transition-all transform hover:-translate-y-2 active:scale-95 shadow-sm border-white"
           >
             {t.hero.howItWorks}
           </button>
+        </div>
+
+        <div className="mt-20 flex items-center justify-center space-x-12 opacity-40 animate-in fade-in duration-1000 delay-500">
+          <div className="flex items-center space-x-2">
+            <ShieldCheck className="w-5 h-5" />
+            <span className="text-xs font-black uppercase tracking-widest">Enterprise Encrypted</span>
+          </div>
+          <div className="h-4 w-px bg-gray-300"></div>
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-5 h-5" />
+            <span className="text-xs font-black uppercase tracking-widest">AI Assisted</span>
+          </div>
         </div>
       </div>
     </section>

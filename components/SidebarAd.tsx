@@ -45,20 +45,16 @@ const SidebarAd: React.FC<SidebarAdProps> = ({ side }) => {
   }, [location.key, side]);
 
   return (
-    <div className="sticky top-24 w-full flex flex-col items-center">
-      <div className="flex flex-col items-center group">
-        <span className={`text-[9px] font-black text-gray-400 uppercase tracking-[0.3em] mb-48 whitespace-nowrap transition-colors group-hover:text-blue-500 ${side === 'left' ? '-rotate-90' : 'rotate-90'}`}>
-          Help Keep Us Free
-        </span>
-        
+    <div className="sticky top-40 w-full flex flex-col items-center">
+      <div className="flex flex-col items-center group pt-10">
         {/* Sky-scraper slot container */}
         <div 
-          className="relative flex items-center justify-center bg-gray-50 border border-gray-100 shadow-sm rounded-xl overflow-hidden transition-all group-hover:border-blue-100 group-hover:shadow-md"
+          className="relative flex items-center justify-center bg-white/40 backdrop-blur-md border border-gray-100 shadow-sm rounded-3xl overflow-hidden transition-all group-hover:border-blue-200 group-hover:shadow-md"
           style={{ height: '468px', width: '60px' }}
         >
           <div 
             ref={containerRef}
-            className="absolute transform rotate-90 origin-center flex items-center justify-center bg-white"
+            className="absolute transform rotate-90 origin-center flex items-center justify-center bg-transparent"
             style={{ width: '468px', height: '60px' }}
           >
             <div className="flex flex-col items-center justify-center space-y-2">
@@ -68,10 +64,6 @@ const SidebarAd: React.FC<SidebarAdProps> = ({ side }) => {
             </div>
           </div>
         </div>
-
-        <span className={`text-[9px] font-black text-gray-400 uppercase tracking-[0.3em] mt-48 whitespace-nowrap transition-colors group-hover:text-blue-500 ${side === 'left' ? '-rotate-90' : 'rotate-90'}`}>
-          Ads = Free Forever
-        </span>
       </div>
     </div>
   );
