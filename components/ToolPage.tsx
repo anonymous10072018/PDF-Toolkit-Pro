@@ -6,7 +6,7 @@ import {
   FileWarning, Hash, ArrowRight, Layers, FileText, Clock, Coffee, 
   XCircle, TrendingDown, ArrowDown, Image as ImageIcon, FileCheck,
   Archive, FolderArchive, FileType, CheckCircle, ShieldCheck, Info,
-  Star
+  Star, Eye, ZoomIn, Search
 } from 'lucide-react';
 import { TOOLS, API_ENDPOINTS } from '../constants';
 import Dropzone from './Dropzone';
@@ -38,6 +38,7 @@ const ToolPage: React.FC = () => {
   const [startPage, setStartPage] = useState<number>(1);
   const [endPage, setEndPage] = useState<number>(1);
   const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [processing, setProcessing] = useState<ProcessingState>({
     status: 'idle',
     progress: 0
@@ -66,6 +67,9 @@ const ToolPage: React.FC = () => {
       });
       if (processing.downloadUrl) URL.revokeObjectURL(processing.downloadUrl);
       if (processing.previewUrl && !processing.previewUrl.startsWith('data:')) URL.revokeObjectURL(processing.previewUrl);
+      processing.previewGallery?.forEach(url => {
+        if (!url.startsWith('data:')) URL.revokeObjectURL(url);
+      });
     };
   }, [tool, navigate, processing.downloadUrl]);
 
@@ -84,22 +88,31 @@ const ToolPage: React.FC = () => {
     }
   };
 
-  const generatePreview = async (pdfBlob: Blob): Promise<string> => {
+  const generateAllPreviews = async (pdfBlob: Blob): Promise<string[]> => {
     try {
-      if (pdfBlob.type !== 'application/pdf') return '';
+      if (pdfBlob.type !== 'application/pdf') return [];
       const arrayBuffer = await pdfBlob.arrayBuffer();
       const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 1.0 });
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      if (!context) return '';
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      await page.render({ canvasContext: context, viewport, canvas }).promise;
-      return canvas.toDataURL('image/png');
+      const numPages = pdf.numPages;
+      const previews: string[] = [];
+      
+      const maxPages = Math.min(numPages, 50);
+      
+      for (let i = 1; i <= maxPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) continue;
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: context, viewport, canvas }).promise;
+        previews.push(canvas.toDataURL('image/png'));
+      }
+      return previews;
     } catch (err) {
-      return '';
+      console.error("Preview generation error:", err);
+      return [];
     }
   };
 
@@ -118,6 +131,7 @@ const ToolPage: React.FC = () => {
         const totalPages = pdf.numPages;
         const mimeType = imgFormat === 'jpeg' ? 'image/jpeg' : 'image/png';
         const ext = imgFormat === 'jpeg' ? 'jpg' : 'png';
+        const previews: string[] = [];
 
         for (let i = 1; i <= totalPages; i++) {
           if (abortControllerRef.current?.signal.aborted) throw new Error('Aborted');
@@ -130,7 +144,11 @@ const ToolPage: React.FC = () => {
           canvas.width = viewport.width;
           await page.render({ canvasContext: ctx, viewport, canvas }).promise;
           const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, mimeType, 0.9));
-          if (blob) zip.file(`Page_${i}.${ext}`, blob);
+          if (blob) {
+            zip.file(`Page_${i}.${ext}`, blob);
+            const dataUrl = canvas.toDataURL('image/png');
+            if (i <= 50) previews.push(dataUrl);
+          }
           setProcessing(prev => ({ 
             ...prev, 
             progress: 10 + Math.floor((i / totalPages) * 80), 
@@ -141,7 +159,9 @@ const ToolPage: React.FC = () => {
         setProcessing({
           status: 'success', progress: 100,
           downloadUrl: URL.createObjectURL(zipBlob),
-          message: `${t.toolPage.successTitle} rendered ${totalPages} pages.`,
+          previewUrl: previews[0],
+          previewGallery: previews,
+          message: `${t.toolPage.successTitle} Rendered ${totalPages} pages.`,
           resultType: 'zip'
         });
         return;
@@ -189,9 +209,19 @@ const ToolPage: React.FC = () => {
 
         if (contentType?.includes('wordprocessingml') || contentType?.includes('msword')) {
           setProcessing({ status: 'success', progress: 100, downloadUrl, message: t.toolPage.successTitle, resultType: 'word' });
-        } else if (contentType?.includes('pdf')) {
-          const previewUrl = await generatePreview(blob);
-          setProcessing({ status: 'success', progress: 100, downloadUrl, previewUrl, message: t.toolPage.successTitle, resultType: 'pdf', originalSize: originalTotalSize, compressedSize: blob.size });
+        } else if (contentType?.includes('pdf') || tool.id === 'img-to-pdf' || tool.id === 'merge-pdf' || tool.id === 'compress-pdf') {
+          const previews = await generateAllPreviews(blob);
+          setProcessing({ 
+            status: 'success', 
+            progress: 100, 
+            downloadUrl, 
+            previewUrl: previews[0], 
+            previewGallery: previews,
+            message: t.toolPage.successTitle, 
+            resultType: 'pdf', 
+            originalSize: originalTotalSize, 
+            compressedSize: blob.size 
+          });
         } else {
           setProcessing({ status: 'success', progress: 100, downloadUrl, message: t.toolPage.successTitle, resultType: 'pdf' });
         }
@@ -207,12 +237,24 @@ const ToolPage: React.FC = () => {
   const resetTool = () => {
     resultFiles.forEach(f => URL.revokeObjectURL(f.url));
     if (processing.downloadUrl) URL.revokeObjectURL(processing.downloadUrl);
+    processing.previewGallery?.forEach(url => { if (!url.startsWith('data:')) URL.revokeObjectURL(url); });
     setFiles([]); setResultFiles([]); setProcessing({ status: 'idle', progress: 0 });
+    setIsPreviewOpen(false);
   };
+
+  const launchButton = (
+    <button
+      disabled={files.length === 0}
+      onClick={handleProcess}
+      className={`px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl flex items-center justify-center group ${files.length > 0 ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200 hover:scale-[1.05] active:scale-95' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+    >
+      <Play className="mr-2 w-5 h-5 fill-current" />
+      {t.toolPage.processNow}
+    </button>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 pt-10 pb-20 relative overflow-hidden">
-      {/* PERSISTENT POSTER BLURS */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none overflow-hidden -z-10">
         <div className="absolute -top-[10%] left-[10%] w-[60%] h-[50%] bg-blue-100 rounded-full blur-[160px] opacity-70 animate-pulse"></div>
         <div className="absolute bottom-[10%] right-[10%] w-[50%] h-[50%] bg-indigo-100 rounded-full blur-[140px] opacity-60"></div>
@@ -228,7 +270,6 @@ const ToolPage: React.FC = () => {
           
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-20"></div>
 
-          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-16 gap-8 relative z-10">
             <div className="flex items-center space-x-8">
               <div className={`${tool.color} w-24 h-24 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-blue-200/50 flex-shrink-0 transform -rotate-2 hover:rotate-0 transition-transform duration-500`}>
@@ -250,7 +291,8 @@ const ToolPage: React.FC = () => {
               <Dropzone 
                 onFilesSelected={setFiles} 
                 accept={getAcceptedFiles()}
-                multiple={tool.id === 'img-to-pdf' || tool.id === 'merge-pdf'} 
+                multiple={tool.id === 'img-to-pdf' || tool.id === 'merge-pdf'}
+                actionButton={files.length > 0 ? launchButton : null}
               />
               
               {tool.id === 'pdf-to-img' && files.length > 0 && (
@@ -260,14 +302,16 @@ const ToolPage: React.FC = () => {
                 </div>
               )}
 
-              <button
-                disabled={files.length === 0}
-                onClick={handleProcess}
-                className={`w-full mt-12 py-6 rounded-[1.75rem] font-black text-xl tracking-wide transition-all shadow-2xl flex items-center justify-center group ${files.length > 0 ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200 hover:scale-[1.01]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-              >
-                <Play className="mr-3 w-7 h-7 fill-current group-hover:scale-110 transition-transform" />
-                {t.toolPage.processNow}
-              </button>
+              {/* Keep a fallback button at the bottom for accessibility if desired, or remove to strictly follow "near Selected Files" */}
+              {files.length === 0 && (
+                <button
+                  disabled={true}
+                  className="w-full mt-12 py-6 rounded-[1.75rem] font-black text-xl tracking-wide transition-all shadow-2xl flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed opacity-50"
+                >
+                  <Play className="mr-3 w-7 h-7 fill-current" />
+                  {t.toolPage.processNow}
+                </button>
+              )}
             </div>
           )}
 
@@ -294,17 +338,42 @@ const ToolPage: React.FC = () => {
 
           {processing.status === 'success' && (
             <div className="py-6 flex flex-col items-center text-center animate-in zoom-in-95 duration-1000 slide-in-from-bottom-10">
-              
               <div className="relative mb-16 w-full max-w-lg mx-auto">
-                <div className="absolute -inset-10 bg-gradient-to-tr from-blue-600/30 to-indigo-600/30 rounded-[4rem] blur-[80px] opacity-60 animate-pulse"></div>
+                <div className="absolute -inset-20 bg-gradient-to-tr from-blue-600/20 to-indigo-600/20 rounded-[4rem] blur-[100px] opacity-50 animate-pulse"></div>
                 
                 {processing.previewUrl ? (
                   <div className="relative group perspective-1000">
-                    <div className="absolute -inset-4 bg-white/20 backdrop-blur-xl rounded-[2.5rem] border border-white/30 shadow-2xl transform -rotate-3 transition-transform group-hover:rotate-0 duration-700"></div>
-                    <div className="relative bg-white p-4 rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] pdf-shadow overflow-hidden max-w-[320px] mx-auto transform rotate-2 group-hover:rotate-0 transition-all duration-700 ease-out-expo">
-                      <img src={processing.previewUrl} alt="Result Preview" className="w-full h-auto rounded-2xl shadow-inner border border-gray-50" />
-                      <div className="absolute bottom-6 right-6 bg-blue-600 text-white p-3 rounded-2xl shadow-2xl shadow-blue-400 transform scale-110">
-                        <Star className="w-6 h-6 fill-current" />
+                    {(tool.id === 'img-to-pdf' || tool.id === 'merge-pdf') && (
+                        <>
+                            <div className="absolute top-2 left-2 w-full h-full bg-white/40 rounded-[2.5rem] border border-white/40 shadow-xl transform rotate-2 -z-10"></div>
+                            <div className="absolute -top-2 -left-2 w-full h-full bg-white/20 rounded-[2.5rem] border border-white/20 shadow-xl transform -rotate-1 -z-20"></div>
+                        </>
+                    )}
+                    
+                    <div className="relative bg-white p-5 rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] pdf-shadow overflow-hidden max-w-[340px] mx-auto transition-all duration-700 ease-out-expo group-hover:scale-[1.02]">
+                      <div className="relative rounded-2xl overflow-hidden border border-gray-100 bg-gray-50/50">
+                        <img src={processing.previewUrl} alt="Result Preview" className="w-full h-auto" />
+                        <div className="absolute inset-0 bg-gray-900/0 group-hover:bg-gray-900/10 transition-colors duration-500 flex items-center justify-center">
+                            <button 
+                                onClick={() => setIsPreviewOpen(true)}
+                                className="bg-white text-gray-900 px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-2xl opacity-0 group-hover:opacity-100 transition-all transform translate-y-4 group-hover:translate-y-0 flex items-center"
+                            >
+                                <Eye className="w-4 h-4 mr-2" /> Quick View
+                            </button>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-6 flex items-center justify-between px-2">
+                        <div className="text-left">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Generated Result</p>
+                            <p className="text-sm font-black text-gray-900 truncate max-w-[180px]">
+                                {tool.id === 'img-to-pdf' ? 'Combined_Images.pdf' : 
+                                 tool.id === 'merge-pdf' ? 'Merged_Document.pdf' : 'result.pdf'}
+                            </p>
+                        </div>
+                        <div className="bg-blue-600 text-white p-3 rounded-2xl shadow-xl shadow-blue-200">
+                            <Star className="w-5 h-5 fill-current" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -316,7 +385,11 @@ const ToolPage: React.FC = () => {
               </div>
 
               <h2 className="text-5xl font-black text-gray-900 mb-4 tracking-tighter">{t.toolPage.successTitle}</h2>
-              <p className="text-gray-500 mb-12 font-bold text-xl leading-relaxed max-w-md">{processing.message}</p>
+              <p className="text-gray-500 mb-12 font-bold text-xl leading-relaxed max-w-md">
+                {tool.id === 'img-to-pdf' ? 'Images successfully compiled into a professional PDF.' : 
+                 tool.id === 'merge-pdf' ? 'Your PDF files have been perfectly merged together.' : 
+                 processing.message}
+              </p>
               
               <div className="w-full max-w-md space-y-5">
                 {processing.downloadUrl && (
@@ -364,6 +437,67 @@ const ToolPage: React.FC = () => {
         </div>
       </div>
 
+      {isPreviewOpen && (processing.previewGallery || processing.previewUrl) && (
+          <div 
+            className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-300"
+            onClick={() => setIsPreviewOpen(false)}
+          >
+              <div className="absolute inset-0 bg-gray-900/70 backdrop-blur-xl"></div>
+              <div 
+                className="relative bg-white rounded-[3rem] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-500"
+                onClick={e => e.stopPropagation()}
+              >
+                  <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                      <div className="flex items-center space-x-4">
+                        <div className="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-100">
+                            <Eye className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">Full Result Preview</h3>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">
+                              {processing.previewGallery ? `${processing.previewGallery.length} Pages Generated` : 'Single Page Result'}
+                            </p>
+                        </div>
+                      </div>
+                      <button onClick={() => setIsPreviewOpen(false)} className="p-3.5 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all transform hover:rotate-90">
+                          <XCircle className="w-7 h-7 text-gray-400" />
+                      </button>
+                  </div>
+
+                  <div className="flex-grow overflow-y-auto p-8 md:p-12 bg-gray-50/50 space-y-12">
+                      {processing.previewGallery ? (
+                        processing.previewGallery.map((url, idx) => (
+                          <div key={idx} className="flex flex-col items-center">
+                            <div className="relative group/page">
+                              <img src={url} alt={`Page ${idx + 1}`} className="w-full h-auto max-w-3xl rounded-[2rem] shadow-2xl border border-white" />
+                              <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest opacity-0 group-hover/page:opacity-100 transition-opacity">
+                                Page {idx + 1}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex justify-center">
+                          <img src={processing.previewUrl} alt="Quick View" className="w-full h-auto max-w-3xl rounded-[2rem] shadow-2xl border border-white" />
+                        </div>
+                      )}
+                  </div>
+
+                  <div className="p-8 border-t border-gray-100 bg-white/80 backdrop-blur-md sticky bottom-0 z-10">
+                      {processing.downloadUrl && (
+                          <a 
+                            href={processing.downloadUrl} 
+                            download="result.pdf"
+                            className="w-full py-5 bg-blue-600 text-white rounded-[1.75rem] font-black text-xl flex items-center justify-center shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all transform hover:-translate-y-1"
+                          >
+                              <Download className="w-7 h-7 mr-4" /> Download Complete Document
+                          </a>
+                      )}
+                  </div>
+              </div>
+          </div>
+      )}
+
       <style>{`
         .ease-out-expo {
           transition-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
@@ -379,6 +513,9 @@ const ToolPage: React.FC = () => {
         .animate-gradient {
           background-size: 200% 200%;
           animation: gradient 3s linear infinite;
+        }
+        .pdf-shadow {
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.2), 0 30px 60px -30px rgba(0,0,0,0.1);
         }
       `}</style>
     </div>

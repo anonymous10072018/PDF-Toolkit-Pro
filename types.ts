@@ -25,6 +25,7 @@ export interface ProcessingState {
   message?: string;
   downloadUrl?: string;
   previewUrl?: string;
+  previewGallery?: string[];
   originalSize?: number;
   compressedSize?: number;
   resultType?: 'pdf' | 'zip' | 'json' | 'word';

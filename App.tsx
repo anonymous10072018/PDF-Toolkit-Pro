@@ -77,6 +77,8 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
+  const isToolPage = location.pathname.startsWith('/tool/');
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -104,7 +106,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className={`sticky top-0 z-[200] w-full transition-all duration-500 px-4 pt-6`}>
+    <nav className={`${!isToolPage ? 'sticky top-0' : 'relative'} z-[200] w-full transition-all duration-500 px-4 pt-6`}>
       <div className={`max-w-7xl mx-auto rounded-[2.5rem] transition-all duration-500 ${
         isScrolled ? 'glass-morphism shadow-[0_12px_40px_rgba(0,0,0,0.06)] px-10 py-2.5' : 'bg-transparent px-6 py-4'
       }`}>

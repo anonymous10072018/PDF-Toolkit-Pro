@@ -6,9 +6,10 @@ interface DropzoneProps {
   onFilesSelected: (files: File[]) => void;
   accept?: string;
   multiple?: boolean;
+  actionButton?: React.ReactNode;
 }
 
-const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, accept = "*", multiple = true }) => {
+const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, accept = "*", multiple = true, actionButton }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -54,28 +55,25 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, accept = "*", mult
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    // Fix: Explicitly cast Array.from result to File[] to avoid 'unknown[]' error
     const droppedFiles = Array.from(e.dataTransfer.files) as File[];
     const validFiles = validateFiles(droppedFiles);
     
     if (validFiles.length > 0) {
       const finalFiles = multiple ? [...selectedFiles, ...validFiles] : [validFiles[0]];
       setSelectedFiles(finalFiles);
-      onFilesSelected(validFiles);
+      onFilesSelected(finalFiles);
     }
   }, [onFilesSelected, multiple, selectedFiles, accept]);
 
   const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    // Fix: Explicitly cast Array.from result to File[] to avoid 'unknown[]' error
     const chosenFiles = Array.from(e.target.files || []) as File[];
     const validFiles = validateFiles(chosenFiles);
     
     if (validFiles.length > 0) {
       const finalFiles = multiple ? [...selectedFiles, ...validFiles] : [validFiles[0]];
       setSelectedFiles(finalFiles);
-      onFilesSelected(validFiles);
+      onFilesSelected(finalFiles);
     }
-    // Reset input so same file can be selected again
     e.target.value = '';
   }, [onFilesSelected, multiple, selectedFiles, accept]);
 
@@ -120,30 +118,45 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, accept = "*", mult
       )}
 
       {selectedFiles.length > 0 && (
-        <div className="mt-8 space-y-3">
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Selected Files ({selectedFiles.length})</h4>
-            <button onClick={() => { setSelectedFiles([]); onFilesSelected([]); }} className="text-xs text-red-500 hover:text-red-600 font-bold uppercase tracking-widest transition-colors">Clear All</button>
-          </div>
-          {selectedFiles.map((file, idx) => (
-            <div key={`${file.name}-${idx}`} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="flex items-center space-x-3 truncate">
-                <div className="bg-blue-50 p-2 rounded-lg text-blue-600">
-                  <FileIcon className="w-5 h-5" />
-                </div>
-                <div className="truncate">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{file.name}</p>
-                  <p className="text-xs text-gray-400">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => removeFile(idx)}
-                className="p-1 hover:bg-gray-100 rounded-full text-gray-400 hover:text-red-500 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div className="mt-12 space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center space-x-4">
+              <h4 className="text-sm font-black text-gray-500 uppercase tracking-widest">Selected Files ({selectedFiles.length})</h4>
+              <button onClick={() => { setSelectedFiles([]); onFilesSelected([]); }} className="text-xs text-red-500 hover:text-red-600 font-black uppercase tracking-widest transition-colors hover:underline">Clear All</button>
             </div>
-          ))}
+            
+            {/* Desktop Action Button Slot */}
+            <div className="hidden sm:block">
+              {actionButton}
+            </div>
+          </div>
+
+          {/* Mobile Action Button Slot (Visible only when files exist) */}
+          <div className="block sm:hidden">
+            {actionButton}
+          </div>
+
+          <div className="space-y-3">
+            {selectedFiles.map((file, idx) => (
+              <div key={`${file.name}-${idx}`} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center space-x-3 truncate">
+                  <div className="bg-blue-50 p-2 rounded-lg text-blue-600">
+                    <FileIcon className="w-5 h-5" />
+                  </div>
+                  <div className="truncate">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{file.name}</p>
+                    <p className="text-xs text-gray-400">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => removeFile(idx)}
+                  className="p-1 hover:bg-gray-100 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
