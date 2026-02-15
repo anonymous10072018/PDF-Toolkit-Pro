@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useLanguage } from '../App';
-import { Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Sparkles, ArrowRight, ShieldCheck, FileStack } from 'lucide-react';
 
 const Hero: React.FC = () => {
   const { t } = useLanguage();
@@ -16,6 +16,14 @@ const Hero: React.FC = () => {
   return (
     <section className="relative pt-16 pb-28 lg:pt-24 lg:pb-40 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+        
+        {/* Title Icon / Logo */}
+        <div className="flex justify-center mb-8 animate-in fade-in zoom-in duration-1000">
+          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-[2.5rem] shadow-2xl shadow-blue-200 rotate-6 transform hover:rotate-0 transition-transform duration-500">
+            <FileStack className="w-16 h-16 text-white" />
+          </div>
+        </div>
+
         <div className="inline-flex items-center space-x-3 bg-white/80 backdrop-blur-md border border-white/90 px-5 py-2.5 rounded-full mb-12 shadow-[0_8px_32px_rgba(0,0,0,0.04)] animate-in fade-in slide-in-from-bottom-4 duration-1000">
           <div className="flex h-5 w-5 rounded-full bg-blue-600/10 items-center justify-center">
             <Sparkles className="w-3 h-3 text-blue-600 animate-pulse" />

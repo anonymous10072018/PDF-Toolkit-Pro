@@ -1,6 +1,6 @@
 
 import React, { useState, createContext, useContext, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FileStack, Facebook, Mail, Menu, X, ChevronUp, Sparkles } from 'lucide-react';
 import ToolGrid from './components/ToolGrid';
 import Hero from './components/Hero';
@@ -12,6 +12,7 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import AdBanner from './components/AdBanner';
 import SidebarAd from './components/SidebarAd';
 import { Language, translations } from './translations';
+import { TOOLS } from './constants';
 
 interface LanguageContextType {
   language: Language;
@@ -25,6 +26,53 @@ export const useLanguage = () => {
   const context = useContext(LanguageContext);
   if (!context) throw new Error('useLanguage must be used within a LanguageProvider');
   return context;
+};
+
+// SEO Component to handle dynamic title and meta updates
+const SEOWrapper = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  const { t, language } = useLanguage();
+
+  useEffect(() => {
+    let title = "📄 PDF Toolkit Pro - Professional Online PDF & File Tools";
+    let description = "Merge, split, compress, and convert PDFs online. Professional-grade toolkit for Word to PDF and unique Booklet PDF creation. Fast, secure, and free.";
+
+    // Handle Tool Pages
+    if (location.pathname.startsWith('/tool/')) {
+      const toolId = location.pathname.split('/').pop();
+      const tool = TOOLS.find(tool => tool.id === toolId);
+      if (tool) {
+        // Use translated SEO titles if available
+        const seoTitle = t.tools[`${tool.id}SEO`] || t.tools[tool.titleKey];
+        title = `🛠️ ${seoTitle} | PDF Toolkit Pro`;
+        description = t.tools[tool.descKey];
+      }
+    } else if (location.pathname === '/about') {
+      title = `ℹ️ About Us | PDF Toolkit Pro`;
+    } else if (location.pathname === '/contact') {
+      title = `📧 Contact Support | PDF Toolkit Pro`;
+    } else if (location.pathname === '/privacy-policy') {
+      title = `🔒 Privacy Policy | PDF Toolkit Pro`;
+    }
+
+    document.title = title;
+    
+    // Update meta description
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', description);
+    }
+    
+    // Update OG tags
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', description);
+
+  }, [location.pathname, t, language]);
+
+  return <>{children}</>;
 };
 
 const ScrollToTop = () => {
@@ -112,8 +160,9 @@ const Navbar = () => {
       }`}>
         <div className="flex justify-between h-16 items-center">
           <Link to="/" className="flex items-center space-x-3 group">
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-2.5 rounded-2xl transition-all group-hover:rotate-6 group-hover:scale-110 shadow-lg shadow-blue-200">
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-2.5 rounded-2xl transition-all group-hover:rotate-6 group-hover:scale-110 shadow-lg shadow-blue-200 relative">
               <FileStack className="w-6 h-6 text-white" />
+              <div className="absolute inset-0 bg-white/20 rounded-2xl animate-ping pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-extrabold text-gray-900 tracking-tight leading-none">PDF Toolkit<span className="text-blue-600">Pro</span></span>
@@ -245,46 +294,48 @@ const App: React.FC = () => {
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t: translations[language] }}>
       <Router>
-        <div className="min-h-screen flex flex-col relative">
-          <BackgroundMesh />
-          <Navbar />
-          
-          <div className="flex-grow flex flex-col items-center">
-            <div className="flex flex-row w-full max-w-[1600px] justify-center px-4 xl:px-8 relative">
-              {/* Vertical Ads Left */}
-              <div className="hidden xl:block w-[120px] flex-shrink-0">
-                <SidebarAd side="left" />
+        <SEOWrapper>
+          <div className="min-h-screen flex flex-col relative">
+            <BackgroundMesh />
+            <Navbar />
+            
+            <div className="flex-grow flex flex-col items-center">
+              <div className="flex flex-row w-full max-w-[1600px] justify-center px-4 xl:px-8 relative">
+                {/* Vertical Ads Left */}
+                <div className="hidden xl:block w-[120px] flex-shrink-0">
+                  <SidebarAd side="left" />
+                </div>
+
+                {/* Content Page (Middle Column) */}
+                <main className="flex-grow max-w-5xl relative z-10 py-12 md:py-24">
+                  <Routes>
+                    <Route path="/" element={
+                      <>
+                        <Hero />
+                        <HowItWorks />
+                        <ToolGrid />
+                      </>
+                    } />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/tool/:id" element={<ToolPage />} />
+                  </Routes>
+                </main>
+
+                {/* Vertical Ads Right */}
+                <div className="hidden xl:block w-[120px] flex-shrink-0">
+                  <SidebarAd side="right" />
+                </div>
               </div>
 
-              {/* Content Page (Middle Column) */}
-              <main className="flex-grow max-w-5xl relative z-10 py-12 md:py-24">
-                <Routes>
-                  <Route path="/" element={
-                    <>
-                      <Hero />
-                      <HowItWorks />
-                      <ToolGrid />
-                    </>
-                  } />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/contact" element={<ContactPage />} />
-                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                  <Route path="/tool/:id" element={<ToolPage />} />
-                </Routes>
-              </main>
-
-              {/* Vertical Ads Right */}
-              <div className="hidden xl:block w-[120px] flex-shrink-0">
-                <SidebarAd side="right" />
-              </div>
+              <AdBanner />
             </div>
-
-            <AdBanner />
+            
+            <Footer />
+            <ScrollToTop />
           </div>
-          
-          <Footer />
-          <ScrollToTop />
-        </div>
+        </SEOWrapper>
       </Router>
     </LanguageContext.Provider>
   );

@@ -42,6 +42,7 @@ const ToolPage: React.FC = () => {
 
   const toolTitle = tool ? t.tools[tool.titleKey] : '';
   const toolDesc = tool ? t.tools[tool.descKey] : '';
+  const seoHeader = tool ? (t.tools[`${tool.id}SEO`] || toolTitle) : toolTitle;
 
   const usesHighFidelityEngine = useMemo(() => {
     return ['pdf-to-word', 'word-to-pdf', 'compress-pdf', 'pdf-to-img', 'booklet-pdf'].includes(tool?.id || '');
@@ -234,7 +235,6 @@ const ToolPage: React.FC = () => {
         const vp = page.getViewport({ scale: 1.0 });
         const canvas = document.createElement('canvas');
         canvas.height = vp.height; canvas.width = vp.width;
-        // Fix: Added 'canvas' property to the object passed to page.render to satisfy 'RenderParameters' type requirements.
         await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp, canvas }).promise;
         res.push(canvas.toDataURL());
       }
@@ -261,6 +261,13 @@ const ToolPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-10 pb-20 relative overflow-hidden">
+      {/* Hidden SEO Content for Crawlers */}
+      <div className="sr-only">
+        <h1>{seoHeader}</h1>
+        <h2>{toolDesc}</h2>
+        <p>Use our professional PDF Toolkit to process your documents securely and instantly. This tool provides {toolTitle} functionality with enterprise-grade quality.</p>
+      </div>
+
       <div className="max-w-5xl mx-auto px-4 relative z-10">
         <Link to="/" className="inline-flex items-center text-sm font-bold text-gray-400 hover:text-blue-600 mb-8 transition-all group bg-white/60 backdrop-blur-md px-6 py-3 rounded-full border border-gray-100 shadow-sm">
           <ChevronLeft className="w-4 h-4 mr-2" /> {t.toolPage.backToTools}

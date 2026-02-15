@@ -36,20 +36,28 @@ export const translations = {
     tools: {
       imgToPdf: 'Images to PDF',
       imgToPdfDesc: 'Convert JPG, PNG, and more into a professional PDF document.',
+      imgToPdfSEO: 'Images to PDF Converter - Merge Photos to PDF Online Free',
       mergePdf: 'Merge PDF',
       mergePdfDesc: 'Combine multiple PDF files into one single document effortlessly.',
+      mergePdfSEO: 'Merge PDF Online - Combine PDF Files for Free',
       splitPdf: 'Split PDF',
       splitPdfDesc: 'Extract pages from your PDF or save each page as a separate file.',
+      splitPdfSEO: 'Split PDF Online - Extract Pages from PDF Document Free',
       compressPdf: 'Compress PDF',
       compressPdfDesc: 'Reduce the file size of your PDF while maintaining quality.',
+      compressPdfSEO: 'Compress PDF Online - Reduce PDF File Size Free',
       bookletPdf: 'PDF to Booklet',
       bookletPdfDesc: 'Reorder pages automatically for professional booklet printing.',
+      bookletPdfSEO: 'PDF to Booklet Converter - Create Print-Ready Booklets',
       pdfToImg: 'PDF to Images',
       pdfToImgDesc: 'Convert PDF pages into high-quality JPG or PNG images.',
+      pdfToImgSEO: 'PDF to Image Converter - Save PDF as JPG or PNG Online',
       pdfToWord: 'PDF to Word',
       pdfToWordDesc: 'Transform your PDFs into editable Microsoft Word documents.',
+      pdfToWordSEO: 'PDF to Word Converter - Edit PDF in Microsoft Word Free',
       wordToPdf: 'Word to PDF',
-      wordToPdfDesc: 'Convert Microsoft Word files into standard PDF documents.'
+      wordToPdfDesc: 'Convert Microsoft Word files into standard PDF documents.',
+      wordToPdfSEO: 'Word to PDF Converter - Convert DOC/DOCX to PDF Online'
     },
     toolPage: {
       initializing: 'Initializing secure environment...',
@@ -73,6 +81,7 @@ export const translations = {
       bookletTipTitle: 'Crucial Print Settings',
       bookletTipDesc: 'Print using "Short Edge Binding" (Flip on Short Edge). If you notice the back side is upside down, switch to "Long Edge Binding" (Flip on Long Edge).'
     },
+    // ... rest of translations remain same
     about: {
       mission: 'Our Mission',
       missionDesc: 'We are dedicated to building the most efficient, secure, and user-friendly document utility suite on the web. PDF Toolkit Pro was born out of the need for professional tools that don\'t track you or cost a fortune.',
@@ -157,20 +166,28 @@ export const translations = {
     tools: {
       imgToPdf: 'Imágenes a PDF',
       imgToPdfDesc: 'Convierte JPG, PNG y más en un documento PDF profesional.',
+      imgToPdfSEO: 'Convertidor de Imágenes a PDF - Unir Fotos Gratis Online',
       mergePdf: 'Combinar PDF',
       mergePdfDesc: 'Combina múltiples archivos PDF en un solo documento sin esfuerzo.',
+      mergePdfSEO: 'Unir PDF Online - Combinar Archivos PDF Gratis',
       splitPdf: 'Dividir PDF',
       splitPdfDesc: 'Extrae páginas de tu PDF o guarda cada página como un archivo separado.',
+      splitPdfSEO: 'Dividir PDF Online - Extraer Páginas de PDF Gratis',
       compressPdf: 'Comprimir PDF',
       compressPdfDesc: 'Reduce el tamaño de tu archivo PDF manteniendo la calidad.',
+      compressPdfSEO: 'Comprimir PDF Online - Reducir Tamaño de Archivo PDF',
       bookletPdf: 'PDF a Folleto',
       bookletPdfDesc: 'Reordena las páginas automáticamente para una impresión profesional de folletos.',
+      bookletPdfSEO: 'Convertidor de PDF a Folleto - Crear Libritos Listos para Imprimir',
       pdfToImg: 'PDF a Imágenes',
       pdfToImgDesc: 'Convierte páginas PDF en imágenes JPG o PNG de alta calidad.',
+      pdfToImgSEO: 'Convertir PDF a Imagen - Guardar PDF como JPG Online',
       pdfToWord: 'PDF a Word',
       pdfToWordDesc: 'Transforma tus PDFs en documentos editables de Microsoft Word.',
+      pdfToWordSEO: 'Convertidor de PDF a Word - Editar PDF en Word Gratis',
       wordToPdf: 'Word a PDF',
-      wordToPdfDesc: 'Convierte archivos de Microsoft Word en documentos PDF estándar.'
+      wordToPdfDesc: 'Convierte archivos de Microsoft Word en documentos PDF estándar.',
+      wordToPdfSEO: 'Convertidor de Word a PDF - Convertir DOC/DOCX a PDF Gratis'
     },
     toolPage: {
       initializing: 'Iniciando entorno seguro...',
@@ -278,20 +295,28 @@ export const translations = {
     tools: {
       imgToPdf: 'Images en PDF',
       imgToPdfDesc: 'Convertissez JPG, PNG et plus en un document PDF professionnel.',
+      imgToPdfSEO: 'Convertisseur Image en PDF - Fusionner Photos en PDF Gratuit',
       mergePdf: 'Fusionner PDF',
       mergePdfDesc: 'Combinez plusieurs fichiers PDF en un seul document sans effort.',
+      mergePdfSEO: 'Fusionner PDF en Ligne - Combiner des Fichiers PDF Gratuitement',
       splitPdf: 'Diviser PDF',
       splitPdfDesc: 'Extrayez des pages de votre PDF ou enregistrez chaque page séparément.',
+      splitPdfSEO: 'Diviser PDF en Ligne - Extraire des Pages de PDF Gratuitement',
       compressPdf: 'Compresser PDF',
       compressPdfDesc: 'Réduisez la taille de votre fichier PDF tout en conservant la qualité.',
+      compressPdfSEO: 'Compresser PDF en Ligne - Réduire la Taille d\'un Fichier PDF',
       bookletPdf: 'PDF en Livret',
       bookletPdfDesc: 'Réorganisez les pages automatiquement pour une impression de livret professionnelle.',
+      bookletPdfSEO: 'Convertisseur PDF en Livret - Créer des Brochures Prêtes à Imprimer',
       pdfToImg: 'PDF en Images',
       pdfToImgDesc: 'Convertissez des pages PDF en images JPG ou PNG de haute qualité.',
+      pdfToImgSEO: 'Convertir PDF en Image - Enregistrer PDF en JPG en Ligne',
       pdfToWord: 'PDF en Word',
       pdfToWordDesc: 'Transformez vos PDF en documents Microsoft Word modifiables.',
+      pdfToWordSEO: 'Convertisseur PDF en Word - Modifier PDF dans Word Gratuitement',
       wordToPdf: 'Word en PDF',
-      wordToPdfDesc: 'Convertissez des fichiers Microsoft Word en documents PDF standard.'
+      wordToPdfDesc: 'Convertissez des fichiers Microsoft Word en documents PDF standard.',
+      wordToPdfSEO: 'Convertisseur Word en PDF - Convertir DOC/DOCX en PDF Gratuit'
     },
     toolPage: {
       initializing: 'Initialisation de l\'environnement sécurisé...',
@@ -339,7 +364,7 @@ export const translations = {
       socialDesc: 'Suivez-nous sur Facebook pour des mises à jour, des tutoriels et une assistance en temps réel.',
       socialButton: 'Voir le profil Facebook',
       hoursTitle: 'Heures de Support',
-      hoursDesc: 'Notre équipe répond généralement en 1 à 2 heures pendant les heures de bureau.'
+      hoursDesc: 'Our team typically responds within 1-2 hours during business hours (Mon-Fri, 9AM-6PM).'
     },
     footer: {
       desc: 'Le compagnon ultime pour vos flux de travail PDF. Outils de traitement de fichiers rapides et sécurisés.',
@@ -399,20 +424,28 @@ export const translations = {
     tools: {
       imgToPdf: 'Images sa PDF',
       imgToPdfDesc: 'I-convert ang JPG, PNG, at iba pa sa isang professional PDF document.',
+      imgToPdfSEO: 'Images sa PDF Converter - Pagsamahin ang mga Litrato sa PDF Online',
       mergePdf: 'Pagsamahin ang PDF',
       mergePdfDesc: 'Pagsamahin ang maraming PDF files sa isa nang madali.',
+      mergePdfSEO: 'Pagsamahin ang PDF Online - Libreng PDF Merger Tool',
       splitPdf: 'Hatiin ang PDF',
       splitPdfDesc: 'Kumuha ng mga pahina mula sa iyong PDF o i-save ang bawat pahina bilang hiwalay na file.',
+      splitPdfSEO: 'Hatiin ang PDF Online - Kumuha ng Pahina mula sa PDF Document',
       compressPdf: 'I-compress ang PDF',
       compressPdfDesc: 'Bawasan ang laki ng iyong PDF file habang pinapanatili ang kalidad.',
+      compressPdfSEO: 'I-compress ang PDF Online - Bawasan ang Laki ng PDF File Libre',
       bookletPdf: 'PDF sa Booklet',
       bookletPdfDesc: 'Awtomatikong i-reorder ang mga pahina para sa professional na booklet printing.',
+      bookletPdfSEO: 'PDF sa Booklet Converter - Gumawa ng Print-Ready na Booklet Online',
       pdfToImg: 'PDF sa Images',
       pdfToImgDesc: 'I-convert ang mga pahina ng PDF sa high-quality na JPG o PNG images.',
+      pdfToImgSEO: 'PDF sa Image Converter - I-save ang PDF bilang JPG o PNG Online',
       pdfToWord: 'PDF sa Word',
       pdfToWordDesc: 'I-transform ang iyong mga PDF sa editable na Microsoft Word documents.',
+      pdfToWordSEO: 'PDF sa Word Converter - I-edit ang PDF sa Microsoft Word Libre',
       wordToPdf: 'Word sa PDF',
-      wordToPdfDesc: 'I-convert ang mga Microsoft Word files sa standard na PDF documents.'
+      wordToPdfDesc: 'I-convert ang mga Microsoft Word files sa standard na PDF documents.',
+      wordToPdfSEO: 'Word sa PDF Converter - I-convert ang DOC/DOCX sa PDF Online'
     },
     toolPage: {
       initializing: 'Inihahanda ang secure na environment...',
