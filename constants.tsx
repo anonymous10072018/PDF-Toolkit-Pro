@@ -7,7 +7,8 @@ import {
   Minimize2, 
   Image as ImageIcon, 
   FileText, 
-  FileOutput 
+  FileOutput,
+  BookOpen
 } from 'lucide-react';
 import { PDFTool } from './types';
 
@@ -21,6 +22,7 @@ export const API_ENDPOINTS = {
   WORD_TO_PDF: `${API_BASE_URL}/WordToPdf`,
   SPLIT_PDF_RANGE: `${API_BASE_URL}/SplitPdfRange`,
   SPLIT_PDF: `${API_BASE_URL}/SplitPdf`,
+  PDF_TO_BOOKLET: `${API_BASE_URL}/PdfToBooklet`,
 };
 
 export const TOOLS: (PDFTool & { titleKey: string; descKey: string })[] = [
@@ -59,6 +61,15 @@ export const TOOLS: (PDFTool & { titleKey: string; descKey: string })[] = [
     descKey: 'compressPdfDesc',
     icon: <Minimize2 className="w-8 h-8" />,
     color: 'bg-green-500'
+  },
+  {
+    id: 'booklet-pdf',
+    title: 'PDF to Booklet',
+    titleKey: 'bookletPdf',
+    description: 'Reorder pages automatically for professional booklet printing.',
+    descKey: 'bookletPdfDesc',
+    icon: <BookOpen className="w-8 h-8" />,
+    color: 'bg-teal-500'
   },
   {
     id: 'pdf-to-img',

@@ -42,6 +42,8 @@ export const translations = {
       splitPdfDesc: 'Extract pages from your PDF or save each page as a separate file.',
       compressPdf: 'Compress PDF',
       compressPdfDesc: 'Reduce the file size of your PDF while maintaining quality.',
+      bookletPdf: 'PDF to Booklet',
+      bookletPdfDesc: 'Reorder pages automatically for professional booklet printing.',
       pdfToImg: 'PDF to Images',
       pdfToImgDesc: 'Convert PDF pages into high-quality JPG or PNG images.',
       pdfToWord: 'PDF to Word',
@@ -67,7 +69,9 @@ export const translations = {
       pngFormat: 'PNG Format',
       secureEnterprise: 'Secure Enterprise Engine',
       hiFiEngineBadge: 'High-Fidelity Engine',
-      rasterizing: 'Rasterizing page {i} of {total}...'
+      rasterizing: 'Rasterizing page {i} of {total}...',
+      bookletTipTitle: 'Crucial Print Settings',
+      bookletTipDesc: 'Print using "Short Edge Binding" (Flip on Short Edge). If you notice the back side is upside down, switch to "Long Edge Binding" (Flip on Long Edge).'
     },
     about: {
       mission: 'Our Mission',
@@ -159,6 +163,8 @@ export const translations = {
       splitPdfDesc: 'Extrae páginas de tu PDF o guarda cada página como un archivo separado.',
       compressPdf: 'Comprimir PDF',
       compressPdfDesc: 'Reduce el tamaño de tu archivo PDF manteniendo la calidad.',
+      bookletPdf: 'PDF a Folleto',
+      bookletPdfDesc: 'Reordena las páginas automáticamente para una impresión profesional de folletos.',
       pdfToImg: 'PDF a Imágenes',
       pdfToImgDesc: 'Convierte páginas PDF en imágenes JPG o PNG de alta calidad.',
       pdfToWord: 'PDF a Word',
@@ -184,7 +190,9 @@ export const translations = {
       pngFormat: 'Formato PNG',
       secureEnterprise: 'Motor empresarial seguro',
       hiFiEngineBadge: 'Motor de alta fidelidad',
-      rasterizing: 'Rasterizando página {i} de {total}...'
+      rasterizing: 'Rasterizando página {i} de {total}...',
+      bookletTipTitle: 'Ajustes de Impresión Críticos',
+      bookletTipDesc: 'Imprima usando "Borde Corto". Si nota que el reverso aparece al revés, cambie a "Borde Largo" en los ajustes de su impresora.'
     },
     about: {
       mission: 'Nuestra Misión',
@@ -276,6 +284,8 @@ export const translations = {
       splitPdfDesc: 'Extrayez des pages de votre PDF ou enregistrez chaque page séparément.',
       compressPdf: 'Compresser PDF',
       compressPdfDesc: 'Réduisez la taille de votre fichier PDF tout en conservant la qualité.',
+      bookletPdf: 'PDF en Livret',
+      bookletPdfDesc: 'Réorganisez les pages automatiquement pour une impression de livret professionnelle.',
       pdfToImg: 'PDF en Images',
       pdfToImgDesc: 'Convertissez des pages PDF en images JPG ou PNG de haute qualité.',
       pdfToWord: 'PDF en Word',
@@ -301,7 +311,9 @@ export const translations = {
       pngFormat: 'Format PNG',
       secureEnterprise: 'Moteur d\'entreprise sécurisé',
       hiFiEngineBadge: 'Moteur haute fidélité',
-      rasterizing: 'Numérisation de la page {i} sur {total}...'
+      rasterizing: 'Numérisation de la page {i} sur {total}...',
+      bookletTipTitle: 'Paramètres d\'impression cruciaux',
+      bookletTipDesc: 'Imprimez en utilisant le "Bord Court". Si vous remarquez que le verso est à l\'envers, passez au "Bord Long" dans les paramètres de votre imprimante.'
     },
     about: {
       mission: 'Notre Mission',
@@ -393,6 +405,8 @@ export const translations = {
       splitPdfDesc: 'Kumuha ng mga pahina mula sa iyong PDF o i-save ang bawat pahina bilang hiwalay na file.',
       compressPdf: 'I-compress ang PDF',
       compressPdfDesc: 'Bawasan ang laki ng iyong PDF file habang pinapanatili ang kalidad.',
+      bookletPdf: 'PDF sa Booklet',
+      bookletPdfDesc: 'Awtomatikong i-reorder ang mga pahina para sa professional na booklet printing.',
       pdfToImg: 'PDF sa Images',
       pdfToImgDesc: 'I-convert ang mga pahina ng PDF sa high-quality na JPG o PNG images.',
       pdfToWord: 'PDF sa Word',
@@ -418,7 +432,9 @@ export const translations = {
       pngFormat: 'PNG Format',
       secureEnterprise: 'Secure Enterprise Engine',
       hiFiEngineBadge: 'High-Fidelity Engine',
-      rasterizing: 'Pinoproseso ang pahina {i} ng {total}...'
+      rasterizing: 'Pinoproseso ang pahina {i} ng {total}...',
+      bookletTipTitle: 'Mahalagang Settings sa Pag-print',
+      bookletTipDesc: 'I-print gamit ang "Short Edge Binding". Kung pabaliktad ang likod ng papel, palitan ang iyong settings sa "Long Edge Binding".'
     },
     about: {
       mission: 'Ang Aming Misyon',

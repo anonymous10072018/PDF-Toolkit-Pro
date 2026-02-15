@@ -9,7 +9,8 @@ export type ToolType =
   | 'compress-pdf' 
   | 'pdf-to-img' 
   | 'pdf-to-word' 
-  | 'word-to-pdf';
+  | 'word-to-pdf'
+  | 'booklet-pdf';
 
 export interface PDFTool {
   id: ToolType;

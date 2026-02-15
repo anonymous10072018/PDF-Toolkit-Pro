@@ -2,11 +2,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
-  ChevronLeft, Play, Download, AlertCircle, Sparkles, RefreshCw, 
-  FileWarning, Hash, ArrowRight, Layers, FileText, Clock, Coffee, 
-  XCircle, TrendingDown, ArrowDown, Image as ImageIcon, FileCheck,
-  Archive, FolderArchive, FileType, CheckCircle, ShieldCheck, Info,
-  Star, Eye, ZoomIn, Search, Scissors, List
+  ChevronLeft, Play, Download, Sparkles, RefreshCw, 
+  FileWarning, XCircle, CheckCircle, ShieldCheck, Info,
+  Star, Eye, List, BookOpen, Layout, Printer, RotateCw
 } from 'lucide-react';
 import { TOOLS, API_ENDPOINTS } from '../constants';
 import Dropzone from './Dropzone';
@@ -46,11 +44,11 @@ const ToolPage: React.FC = () => {
   const toolDesc = tool ? t.tools[tool.descKey] : '';
 
   const usesHighFidelityEngine = useMemo(() => {
-    return ['pdf-to-word', 'word-to-pdf', 'compress-pdf', 'pdf-to-img'].includes(tool?.id || '');
+    return ['pdf-to-word', 'word-to-pdf', 'compress-pdf', 'pdf-to-img', 'booklet-pdf'].includes(tool?.id || '');
   }, [tool?.id]);
 
   useEffect(() => {
-    if (tool?.id === 'split-pdf' && files.length > 0) {
+    if ((tool?.id === 'split-pdf' || tool?.id === 'booklet-pdf') && files.length > 0) {
       const getPages = async () => {
         try {
           const arrayBuffer = await files[0].arrayBuffer();
@@ -65,23 +63,12 @@ const ToolPage: React.FC = () => {
   }, [files, tool?.id]);
 
   useEffect(() => {
-    if (!tool) {
-      navigate('/');
-    }
+    if (!tool) navigate('/');
     window.scrollTo(0, 0);
     return () => {
       if (abortControllerRef.current) abortControllerRef.current.abort();
-      resultFiles.forEach(f => {
-        URL.revokeObjectURL(f.url);
-        if (f.previewUrl && !f.previewUrl.startsWith('data:')) URL.revokeObjectURL(f.previewUrl);
-      });
-      if (processing.downloadUrl) URL.revokeObjectURL(processing.downloadUrl);
-      if (processing.previewUrl && !processing.previewUrl.startsWith('data:')) URL.revokeObjectURL(processing.previewUrl);
-      processing.previewGallery?.forEach(url => {
-        if (!url.startsWith('data:')) URL.revokeObjectURL(url);
-      });
     };
-  }, [tool, navigate, processing.downloadUrl]);
+  }, [tool, navigate]);
 
   if (!tool) return null;
 
@@ -92,47 +79,11 @@ const ToolPage: React.FC = () => {
       case 'split-pdf': 
       case 'compress-pdf': 
       case 'pdf-to-img': 
+      case 'booklet-pdf':
       case 'pdf-to-word': return "application/pdf";
       case 'word-to-pdf': return ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
       default: return "*";
     }
-  };
-
-  const generateAllPreviews = async (pdfBlob: Blob): Promise<string[]> => {
-    try {
-      if (pdfBlob.type !== 'application/pdf') return [];
-      const arrayBuffer = await pdfBlob.arrayBuffer();
-      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-      const numPages = pdf.numPages;
-      const previews: string[] = [];
-      const maxPages = Math.min(numPages, 50);
-      
-      for (let i = 1; i <= maxPages; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.2 });
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        if (!context) continue;
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        await page.render({ canvasContext: context, viewport, canvas }).promise;
-        previews.push(canvas.toDataURL('image/png'));
-      }
-      return previews;
-    } catch (err) {
-      console.error("Preview generation error:", err);
-      return [];
-    }
-  };
-
-  const base64ToBlob = (base64: string, type: string = 'application/pdf') => {
-    const binStr = atob(base64);
-    const len = binStr.length;
-    const arr = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      arr[i] = binStr.charCodeAt(i);
-    }
-    return new Blob([arr], { type });
   };
 
   const handleProcess = async () => {
@@ -189,50 +140,47 @@ const ToolPage: React.FC = () => {
         return;
       }
 
-      if (tool.id === 'img-to-pdf') {
-        endpoint = API_ENDPOINTS.IMG_TO_PDF;
+      // Route to correct endpoint
+      endpoint = tool.id === 'img-to-pdf' ? API_ENDPOINTS.IMG_TO_PDF :
+                 tool.id === 'merge-pdf' ? API_ENDPOINTS.MERGE_PDF :
+                 tool.id === 'compress-pdf' ? API_ENDPOINTS.COMPRESS_PDF :
+                 tool.id === 'pdf-to-word' ? API_ENDPOINTS.PDF_TO_WORD :
+                 tool.id === 'word-to-pdf' ? API_ENDPOINTS.WORD_TO_PDF :
+                 tool.id === 'split-pdf' ? API_ENDPOINTS.SPLIT_PDF :
+                 tool.id === 'booklet-pdf' ? API_ENDPOINTS.PDF_TO_BOOKLET : '';
+
+      if (['img-to-pdf', 'merge-pdf'].includes(tool.id)) {
         files.forEach(f => formData.append('files', f));
-      } else if (tool.id === 'merge-pdf') {
-        endpoint = API_ENDPOINTS.MERGE_PDF;
-        files.forEach(f => formData.append('files', f));
-      } else if (tool.id === 'compress-pdf') {
-        endpoint = API_ENDPOINTS.COMPRESS_PDF;
-        formData.append('file', files[0]);
-      } else if (tool.id === 'pdf-to-word') {
-        endpoint = API_ENDPOINTS.PDF_TO_WORD;
-        formData.append('file', files[0]);
-      } else if (tool.id === 'word-to-pdf') {
-        endpoint = API_ENDPOINTS.WORD_TO_PDF;
-        formData.append('file', files[0]);
-      } else if (tool.id === 'split-pdf') {
-        endpoint = API_ENDPOINTS.SPLIT_PDF;
+      } else {
         formData.append('file', files[0]);
       }
 
       if (endpoint) {
-        setProcessing(prev => ({ ...prev, progress: 20, message: usesHighFidelityEngine ? t.toolPage.hiFiEngine : t.toolPage.uploading }));
-        const response = await fetch(endpoint, { method: 'POST', body: formData, signal: abortControllerRef.current.signal });
+        setProcessing(prev => ({ ...prev, progress: 20, message: t.toolPage.uploading }));
+        const response = await fetch(endpoint, { 
+          method: 'POST', 
+          body: formData, 
+          signal: abortControllerRef.current.signal 
+        });
         
         if (!response.ok) {
            const errText = await response.text();
-           throw new Error(errText || 'Server processing failed.');
+           throw new Error(errText || 'Conversion failed. Please check the file and try again.');
         }
         
         setProcessing(prev => ({ ...prev, progress: 70, message: t.toolPage.finalizing }));
 
         if (tool.id === 'split-pdf') {
           const data = await response.json();
-          if (!data.pages || !Array.isArray(data.pages)) throw new Error('Invalid response from split engine.');
-          
           const zip = new JSZip();
           const previews: string[] = [];
           
           for (let i = 0; i < data.pages.length; i++) {
             const pdfBlob = base64ToBlob(data.pages[i]);
             zip.file(`Page_${i + 1}.pdf`, pdfBlob);
-            if (i < 10) {
-              const preview = await generateAllPreviews(pdfBlob);
-              if (preview[0]) previews.push(preview[0]);
+            if (i < 5) {
+              const p = await generatePreviews(pdfBlob);
+              if (p[0]) previews.push(p[0]);
             }
           }
           
@@ -249,84 +197,90 @@ const ToolPage: React.FC = () => {
           return;
         }
 
-        const contentType = response.headers.get('content-type');
         const blob = await response.blob();
-        const downloadUrl = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
+        const previews = await generatePreviews(blob);
 
-        if (contentType?.includes('wordprocessingml') || contentType?.includes('msword')) {
-          setProcessing({ status: 'success', progress: 100, downloadUrl, message: t.toolPage.successTitle, resultType: 'word' });
-        } else {
-          const previews = await generateAllPreviews(blob);
-          setProcessing({ 
-            status: 'success', 
-            progress: 100, 
-            downloadUrl, 
-            previewUrl: previews[0], 
-            previewGallery: previews,
-            message: t.toolPage.successTitle, 
-            resultType: 'pdf', 
-            originalSize: originalTotalSize, 
-            compressedSize: blob.size 
-          });
-        }
+        setProcessing({ 
+          status: 'success', 
+          progress: 100, 
+          downloadUrl: url, 
+          previewUrl: previews[0], 
+          previewGallery: previews,
+          message: t.toolPage.successTitle,
+          resultType: response.headers.get('content-type')?.includes('word') ? 'word' : 'pdf'
+        });
       }
     } catch (error: any) {
       if (error.name === 'AbortError') return;
-      setProcessing({ status: 'error', progress: 0, message: error.message || 'An unexpected error occurred.' });
-    } finally {
-      abortControllerRef.current = null;
+      setProcessing({ 
+        status: 'error', 
+        progress: 0, 
+        message: error.message.includes('process cannot access the file') 
+          ? "The server is currently busy or the file is locked. Please wait a moment and try again."
+          : error.message
+      });
     }
   };
 
-  const resetTool = () => {
-    resultFiles.forEach(f => URL.revokeObjectURL(f.url));
-    if (processing.downloadUrl) URL.revokeObjectURL(processing.downloadUrl);
-    processing.previewGallery?.forEach(url => { if (!url.startsWith('data:')) URL.revokeObjectURL(url); });
-    setFiles([]); setResultFiles([]); setProcessing({ status: 'idle', progress: 0 });
-    setIsPreviewOpen(false);
+  const generatePreviews = async (blob: Blob): Promise<string[]> => {
+    try {
+      if (blob.type !== 'application/pdf') return [];
+      const pdf = await pdfjs.getDocument({ data: await blob.arrayBuffer() }).promise;
+      const count = Math.min(pdf.numPages, 10);
+      const res: string[] = [];
+      for (let i = 1; i <= count; i++) {
+        const page = await pdf.getPage(i);
+        const vp = page.getViewport({ scale: 1.0 });
+        const canvas = document.createElement('canvas');
+        canvas.height = vp.height; canvas.width = vp.width;
+        // Fix: Added 'canvas' property to the object passed to page.render to satisfy 'RenderParameters' type requirements.
+        await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp, canvas }).promise;
+        res.push(canvas.toDataURL());
+      }
+      return res;
+    } catch { return []; }
+  };
+
+  const base64ToBlob = (b64: string) => {
+    const s = atob(b64);
+    const a = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+    return new Blob([a], { type: 'application/pdf' });
   };
 
   const launchButton = (
     <button
-      disabled={files.length === 0}
       onClick={handleProcess}
-      className={`px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center group ${files.length > 0 ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200 hover:scale-[1.05] active:scale-95' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+      className="px-10 py-5 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all flex items-center"
     >
-      <Play className="mr-2 w-4 h-4 fill-current" />
+      <Play className="mr-3 w-5 h-5 fill-current" />
       {t.toolPage.processNow}
     </button>
   );
 
   return (
     <div className="min-h-screen bg-gray-50 pt-10 pb-20 relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none overflow-hidden -z-10">
-        <div className="absolute -top-[10%] left-[10%] w-[60%] h-[50%] bg-blue-100 rounded-full blur-[160px] opacity-70 animate-pulse"></div>
-        <div className="absolute bottom-[10%] right-[10%] w-[50%] h-[50%] bg-indigo-100 rounded-full blur-[140px] opacity-60"></div>
-        <div className={`absolute top-[30%] -right-[15%] w-[40%] h-[40%] ${tool.color} rounded-full blur-[180px] opacity-20`}></div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 relative z-10">
-        <Link to="/" className="inline-flex items-center text-sm font-bold text-gray-400 hover:text-blue-600 mb-8 transition-all group bg-white/40 backdrop-blur-md px-5 py-2.5 rounded-full border border-gray-100 shadow-sm hover:shadow-md">
-          <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition-transform" /> {t.toolPage.backToTools}
+      <div className="max-w-5xl mx-auto px-4 relative z-10">
+        <Link to="/" className="inline-flex items-center text-sm font-bold text-gray-400 hover:text-blue-600 mb-8 transition-all group bg-white/60 backdrop-blur-md px-6 py-3 rounded-full border border-gray-100 shadow-sm">
+          <ChevronLeft className="w-4 h-4 mr-2" /> {t.toolPage.backToTools}
         </Link>
 
-        <div className="bg-white/95 backdrop-blur-xl rounded-[3rem] border border-white/20 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] p-8 md:p-14 overflow-hidden relative">
+        <div className="bg-white/95 backdrop-blur-xl rounded-[4rem] border border-white/20 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] p-10 md:p-16 relative">
           
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-20"></div>
-
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-16 gap-8 relative z-10">
-            <div className="flex items-center space-x-8">
-              <div className={`${tool.color} w-24 h-24 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-blue-200/50 flex-shrink-0 transform -rotate-2 hover:rotate-0 transition-transform duration-500`}>
-                {React.cloneElement(tool.icon as React.ReactElement<any>, { className: 'w-12 h-12' })}
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-16 gap-10">
+            <div className="flex items-center space-x-10">
+              <div className={`${tool.color} w-28 h-28 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl transform -rotate-3`}>
+                {React.cloneElement(tool.icon as React.ReactElement<any>, { className: 'w-14 h-14' })}
               </div>
               <div>
-                <h1 className="text-4xl font-black text-gray-900 tracking-tight leading-tight">{toolTitle}</h1>
-                <p className="text-gray-500 mt-2 font-semibold text-lg">{toolDesc}</p>
+                <h1 className="text-5xl font-black text-gray-900 tracking-tight">{toolTitle}</h1>
+                <p className="text-gray-500 mt-2 font-bold text-xl">{toolDesc}</p>
               </div>
             </div>
-            <div className={`flex items-center space-x-2.5 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest border self-start md:self-center transition-all ${usesHighFidelityEngine ? 'bg-indigo-50 text-indigo-700 border-indigo-100 shadow-sm' : 'bg-green-50 text-green-700 border-green-100 shadow-sm'}`}>
+            <div className="flex items-center space-x-3 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-blue-50 text-blue-700 border border-blue-100">
               <ShieldCheck className="w-4 h-4" />
-              <span>{usesHighFidelityEngine ? t.toolPage.hiFiEngineBadge : t.toolPage.secureEnterprise}</span>
+              <span>{t.toolPage.secureEnterprise}</span>
             </div>
           </div>
 
@@ -335,237 +289,111 @@ const ToolPage: React.FC = () => {
               <Dropzone 
                 onFilesSelected={setFiles} 
                 accept={getAcceptedFiles()}
-                multiple={tool.id === 'img-to-pdf' || tool.id === 'merge-pdf'}
+                multiple={['img-to-pdf', 'merge-pdf'].includes(tool.id)}
                 actionButton={files.length > 0 ? launchButton : null}
+                showReorder={tool.id === 'merge-pdf'}
               />
               
-              {tool.id === 'split-pdf' && files.length > 0 && (
-                <div className="mt-12 p-10 bg-purple-50/40 rounded-[2.5rem] border border-purple-100">
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className="bg-white border-2 border-purple-500 shadow-xl text-purple-600 p-5 rounded-2xl flex-1 flex items-center justify-center font-black text-xs uppercase tracking-[0.2em]">
-                      <List className="w-4 h-4 mr-2" /> Extracting All Pages
+              {tool.id === 'booklet-pdf' && files.length > 0 && (
+                <div className="mt-12 space-y-8 animate-in slide-in-from-bottom-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="p-8 bg-teal-50/50 rounded-[2.5rem] border border-teal-100 flex items-start">
+                      <div className="bg-white p-4 rounded-2xl mr-6 text-teal-600 shadow-sm">
+                        <Layout className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-black text-gray-900 mb-2">Booklet Layout</h4>
+                        <p className="text-teal-900 text-sm font-semibold opacity-70">We reorder pages so the printed output can be folded into a professional booklet.</p>
+                      </div>
+                    </div>
+                    <div className="p-8 bg-blue-50/50 rounded-[2.5rem] border border-blue-100 flex items-start">
+                      <div className="bg-white p-4 rounded-2xl mr-6 text-blue-600 shadow-sm">
+                        <Printer className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-black text-gray-900 mb-2">Print Ready</h4>
+                        <p className="text-blue-900 text-sm font-semibold opacity-70">Targeting {totalPagesFound} pages. If needed, we'll add blank pages to make the count divisible by 4.</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="p-4 text-center animate-in fade-in slide-in-from-top-4 duration-500">
-                    <p className="text-purple-900 font-bold text-sm">We will extract all {totalPagesFound} pages and package them into a ZIP archive.</p>
+                  
+                  {/* Printing Tips Card */}
+                  <div className="p-10 bg-orange-50/50 rounded-[2.5rem] border border-orange-100 flex flex-col md:flex-row items-center md:items-start text-center md:text-left">
+                    <div className="bg-white p-5 rounded-[2rem] md:mr-8 text-orange-600 shadow-xl shadow-orange-100 mb-6 md:mb-0 transform hover:rotate-12 transition-transform">
+                      <RotateCw className="w-10 h-10" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-black text-gray-900 mb-3 tracking-tight">{t.toolPage.bookletTipTitle}</h4>
+                      <p className="text-orange-900 text-base font-bold leading-relaxed opacity-80 max-w-2xl">
+                        {t.toolPage.bookletTipDesc}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {tool.id === 'pdf-to-img' && files.length > 0 && (
-                <div className="mt-10 p-8 bg-orange-50/40 rounded-[2rem] border border-orange-100 grid grid-cols-2 gap-6">
-                  <button onClick={() => setImgFormat('jpeg')} className={`p-5 rounded-2xl border-2 transition-all font-black text-sm uppercase tracking-widest ${imgFormat === 'jpeg' ? 'border-orange-500 bg-white shadow-xl translate-y-[-2px]' : 'border-transparent bg-white/50 hover:bg-white'}`}>{t.toolPage.jpgFormat}</button>
-                  <button onClick={() => setImgFormat('png')} className={`p-5 rounded-2xl border-2 transition-all font-black text-sm uppercase tracking-widest ${imgFormat === 'png' ? 'border-orange-500 bg-white shadow-xl translate-y-[-2px]' : 'border-transparent bg-white/50 hover:bg-white'}`}>{t.toolPage.pngFormat}</button>
                 </div>
               )}
             </div>
           )}
 
           {processing.status === 'processing' && (
-            <div className="py-24 flex flex-col items-center text-center animate-in fade-in duration-700">
-              <div className="relative w-40 h-40 mb-12">
-                <div className="absolute inset-0 rounded-full border-4 border-blue-50 shadow-inner"></div>
-                <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin" style={{ animationDuration: '0.6s' }}></div>
-                <div className="absolute inset-0 flex items-center justify-center font-black text-3xl text-blue-600 tabular-nums">{processing.progress}%</div>
-                <div className="absolute -top-2 -right-2 bg-white p-2 rounded-full shadow-lg text-blue-600">
-                  <Sparkles className="w-6 h-6 animate-pulse" />
-                </div>
+            <div className="py-24 flex flex-col items-center text-center">
+              <div className="relative w-48 h-48 mb-16">
+                <div className="absolute inset-0 rounded-full border-8 border-blue-50"></div>
+                <div className="absolute inset-0 rounded-full border-8 border-blue-600 border-t-transparent animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center font-black text-4xl text-blue-600">{processing.progress}%</div>
               </div>
-              <h3 className="text-4xl font-black text-gray-900 mb-4 tracking-tighter">{t.toolPage.processingTitle}</h3>
-              <p className="text-gray-500 mb-16 max-w-sm font-bold text-lg leading-relaxed">{processing.message}</p>
-              <div className="w-full max-w-md bg-gray-100 h-4 rounded-full overflow-hidden mb-16 shadow-inner p-1">
-                <div className="bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-600 h-full transition-all duration-300 rounded-full bg-[length:200%_100%] animate-gradient" style={{ width: `${processing.progress}%` }}></div>
-              </div>
-              <button onClick={() => abortControllerRef.current?.abort()} className="px-8 py-3 rounded-full border border-gray-200 text-sm font-black text-gray-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 transition-all flex items-center uppercase tracking-widest">
-                <XCircle className="w-5 h-5 mr-2" /> {t.toolPage.stopTask}
-              </button>
+              <h3 className="text-4xl font-black text-gray-900 mb-4">{t.toolPage.processingTitle}</h3>
+              <p className="text-gray-500 max-w-sm font-bold text-lg mb-12">{processing.message}</p>
+              <button onClick={() => abortControllerRef.current?.abort()} className="px-8 py-3 bg-red-50 text-red-500 rounded-full font-black uppercase text-xs tracking-widest border border-red-100 hover:bg-red-100 transition-all">Cancel Task</button>
             </div>
           )}
 
           {processing.status === 'success' && (
-            <div className="py-6 flex flex-col items-center text-center animate-in zoom-in-95 duration-1000 slide-in-from-bottom-10">
-              <div className="relative mb-16 w-full max-w-lg mx-auto">
-                <div className="absolute -inset-20 bg-gradient-to-tr from-blue-600/20 to-indigo-600/20 rounded-[4rem] blur-[100px] opacity-50 animate-pulse"></div>
-                
-                {processing.previewUrl ? (
-                  <div className="relative group perspective-1000">
-                    {(tool.id === 'img-to-pdf' || tool.id === 'merge-pdf' || processing.resultType === 'zip') && (
-                        <>
-                            <div className="absolute top-2 left-2 w-full h-full bg-white/40 rounded-[2.5rem] border border-white/40 shadow-xl transform rotate-2 -z-10"></div>
-                            <div className="absolute -top-2 -left-2 w-full h-full bg-white/20 rounded-[2.5rem] border border-white/20 shadow-xl transform -rotate-1 -z-20"></div>
-                        </>
-                    )}
-                    
-                    <div className="relative bg-white p-5 rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] pdf-shadow overflow-hidden max-w-[340px] mx-auto transition-all duration-700 ease-out-expo group-hover:scale-[1.02]">
-                      <div className="relative rounded-2xl overflow-hidden border border-gray-100 bg-gray-50/50">
-                        <img src={processing.previewUrl} alt="Result Preview" className="w-full h-auto" />
-                        <div className="absolute inset-0 bg-gray-900/0 group-hover:bg-gray-900/10 transition-colors duration-500 flex items-center justify-center">
-                            <button 
-                                onClick={() => setIsPreviewOpen(true)}
-                                className="bg-white text-gray-900 px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-2xl opacity-0 group-hover:opacity-100 transition-all transform translate-y-4 group-hover:translate-y-0 flex items-center"
-                            >
-                                <Eye className="w-4 h-4 mr-2" /> Quick View
-                            </button>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-6 flex items-center justify-between px-2">
-                        <div className="text-left">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Generated Result</p>
-                            <p className="text-sm font-black text-gray-900 truncate max-w-[180px]">
-                                {tool.id === 'img-to-pdf' ? 'Combined_Images.pdf' : 
-                                 tool.id === 'merge-pdf' ? 'Merged_Document.pdf' : 
-                                 processing.resultType === 'zip' ? 'Extracted_Pages.zip' : 'result.pdf'}
-                            </p>
-                        </div>
-                        <div className="bg-blue-600 text-white p-3 rounded-2xl shadow-xl shadow-blue-200">
-                            <Star className="w-5 h-5 fill-current" />
-                        </div>
-                      </div>
-                    </div>
+            <div className="py-10 flex flex-col items-center text-center animate-in zoom-in-95 duration-700">
+              <div className="mb-16">
+                <div className="relative p-6 bg-white rounded-[3rem] shadow-2xl border border-gray-100 max-w-sm mx-auto">
+                  {processing.previewUrl ? (
+                    <img src={processing.previewUrl} className="w-full rounded-2xl shadow-sm" alt="Preview" />
+                  ) : (
+                    <CheckCircle className="w-24 h-24 text-green-500" />
+                  )}
+                  <div className="absolute -bottom-6 -right-6 bg-blue-600 text-white p-5 rounded-3xl shadow-2xl">
+                    <Download className="w-8 h-8" />
                   </div>
-                ) : (
-                  <div className="relative w-32 h-32 bg-gradient-to-br from-green-400 to-green-600 text-white rounded-[2.5rem] flex items-center justify-center mb-8 shadow-2xl shadow-green-200 transform hover:scale-110 transition-transform mx-auto">
-                    <CheckCircle className="w-16 h-16" />
-                  </div>
-                )}
+                </div>
               </div>
-
               <h2 className="text-5xl font-black text-gray-900 mb-4 tracking-tighter">{t.toolPage.successTitle}</h2>
-              <p className="text-gray-500 mb-12 font-bold text-xl leading-relaxed max-w-md">
-                {tool.id === 'img-to-pdf' ? 'Images successfully compiled into a professional PDF.' : 
-                 tool.id === 'merge-pdf' ? 'Your PDF files have been perfectly merged together.' : 
-                 tool.id === 'split-pdf' ? 'Document successfully divided into separate files.' :
-                 processing.message}
-              </p>
               
-              <div className="w-full max-w-md space-y-5">
-                {processing.downloadUrl && (
-                  <a 
-                    href={processing.downloadUrl} 
-                    download={
-                      tool.id === 'pdf-to-word' ? `${files[0]?.name.split('.')[0] || 'converted'}.docx` : 
-                      processing.resultType === 'zip' ? `result-archive.zip` : `processed-document.pdf`
-                    }
-                    className={`w-full py-6 rounded-[2rem] font-black text-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.2)] flex items-center justify-center text-white transition-all transform hover:-translate-y-2 hover:scale-[1.02] active:scale-95 ${processing.resultType === 'word' ? 'bg-sky-600 hover:bg-sky-700 shadow-sky-300/50' : processing.resultType === 'zip' ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-300/50' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-300/50'}`}
-                  >
-                    <Download className="w-8 h-8 mr-4" />
-                    {t.toolPage.grabFile}
-                  </a>
-                )}
-                
-                <button onClick={resetTool} className="w-full py-5 bg-white text-gray-900 border-2 border-gray-100 rounded-[2rem] font-black text-lg hover:bg-gray-50 hover:border-gray-200 transition-all flex items-center justify-center shadow-lg group">
-                  <RefreshCw className="w-5 h-5 mr-3 group-hover:rotate-180 transition-transform duration-700" /> {t.toolPage.startNew}
-                </button>
-              </div>
+              {tool.id === 'booklet-pdf' && (
+                <div className="bg-orange-50 p-6 rounded-3xl border border-orange-100 max-w-lg mb-10">
+                   <p className="text-orange-900 font-bold text-sm leading-relaxed">
+                     <span className="block mb-2 uppercase tracking-widest text-[10px] opacity-60">Success Tip</span>
+                     {t.toolPage.bookletTipDesc}
+                   </p>
+                </div>
+              )}
 
-              <div className="mt-16 p-8 bg-blue-50/40 backdrop-blur-sm border border-blue-100/50 rounded-[2.5rem] w-full text-left max-w-md relative overflow-hidden group shadow-sm">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full -mr-16 -mt-16 opacity-30 group-hover:scale-125 transition-transform duration-1000"></div>
-                <p className="text-blue-900 text-sm leading-relaxed flex items-start font-bold relative z-10">
-                  <Info className="w-6 h-6 mr-4 flex-shrink-0 text-blue-600" />
-                  {t.toolPage.securityNote}
-                </p>
+              <div className="w-full max-w-md space-y-6">
+                <a href={processing.downloadUrl} download="result.pdf" className="w-full py-6 bg-blue-600 text-white rounded-[2rem] font-black text-2xl flex items-center justify-center shadow-2xl hover:bg-blue-700 transition-all transform hover:-translate-y-2">
+                  <Download className="mr-4 w-8 h-8" /> {t.toolPage.grabFile}
+                </a>
+                <button onClick={() => setProcessing({ status: 'idle', progress: 0 })} className="w-full py-5 bg-gray-50 text-gray-900 rounded-[2rem] font-black text-lg border-2 border-transparent hover:border-gray-200 transition-all">Start New Conversion</button>
               </div>
             </div>
           )}
 
           {processing.status === 'error' && (
-            <div className="py-20 flex flex-col items-center text-center animate-in fade-in duration-500">
-              <div className="w-28 h-28 bg-red-100 text-red-600 rounded-[2.5rem] flex items-center justify-center mb-10 shadow-2xl shadow-red-200 transform -rotate-6">
-                <FileWarning className="w-14 h-14" />
+            <div className="py-20 flex flex-col items-center text-center animate-in fade-in">
+              <div className="w-32 h-32 bg-red-100 text-red-600 rounded-[3rem] flex items-center justify-center mb-10 shadow-2xl shadow-red-100">
+                <FileWarning className="w-16 h-16" />
               </div>
-              <h3 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">{t.toolPage.errorTitle}</h3>
-              <p className="text-gray-500 mb-14 max-w-sm bg-red-50/60 p-8 rounded-[2rem] border border-red-100 text-lg font-bold leading-relaxed">{processing.message}</p>
-              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-5 w-full max-w-sm">
-                <button onClick={resetTool} className="flex-1 py-5 bg-gray-900 text-white rounded-[1.5rem] font-black uppercase tracking-widest shadow-2xl hover:bg-black transition-all hover:scale-105 active:scale-95">Restart</button>
-                <Link to="/" className="flex-1 py-5 bg-white border-2 border-gray-100 rounded-[1.5rem] font-black uppercase tracking-widest hover:bg-gray-50 transition-all text-center">Cancel</Link>
-              </div>
+              <h3 className="text-4xl font-black text-gray-900 mb-6">{t.toolPage.errorTitle}</h3>
+              <p className="text-red-900 bg-red-50 p-10 rounded-[2.5rem] border border-red-100 font-bold max-w-lg mb-12 shadow-sm leading-relaxed">{processing.message}</p>
+              <button onClick={() => setProcessing({ status: 'idle', progress: 0 })} className="px-12 py-5 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-black transition-all">Try Again</button>
             </div>
           )}
+
         </div>
       </div>
-
-      {isPreviewOpen && (processing.previewGallery || processing.previewUrl) && (
-          <div 
-            className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-300"
-            onClick={() => setIsPreviewOpen(false)}
-          >
-              <div className="absolute inset-0 bg-gray-900/70 backdrop-blur-xl"></div>
-              <div 
-                className="relative bg-white rounded-[3rem] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-500"
-                onClick={e => e.stopPropagation()}
-              >
-                  <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
-                      <div className="flex items-center space-x-4">
-                        <div className="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-100">
-                            <Eye className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">Full Result Preview</h3>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">
-                              {processing.previewGallery ? `${processing.previewGallery.length} Items Previewed` : 'Single Page Result'}
-                            </p>
-                        </div>
-                      </div>
-                      <button onClick={() => setIsPreviewOpen(false)} className="p-3.5 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all transform hover:rotate-90">
-                          <XCircle className="w-7 h-7 text-gray-400" />
-                      </button>
-                  </div>
-
-                  <div className="flex-grow overflow-y-auto p-8 md:p-12 bg-gray-50/50 space-y-12">
-                      {processing.previewGallery ? (
-                        processing.previewGallery.map((url, idx) => (
-                          <div key={idx} className="flex flex-col items-center">
-                            <div className="relative group/page">
-                              <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-auto max-w-3xl rounded-[2rem] shadow-2xl border border-white" />
-                              <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest opacity-0 group-hover/page:opacity-100 transition-opacity">
-                                Item {idx + 1}
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="flex justify-center">
-                          <img src={processing.previewUrl} alt="Quick View" className="w-full h-auto max-w-3xl rounded-[2rem] shadow-2xl border border-white" />
-                        </div>
-                      )}
-                  </div>
-
-                  <div className="p-8 border-t border-gray-100 bg-white/80 backdrop-blur-md sticky bottom-0 z-10">
-                      {processing.downloadUrl && (
-                          <a 
-                            href={processing.downloadUrl} 
-                            download={processing.resultType === 'zip' ? "Result_Archive.zip" : "Result_Document.pdf"}
-                            className="w-full py-5 bg-blue-600 text-white rounded-[1.75rem] font-black text-xl flex items-center justify-center shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all transform hover:-translate-y-1"
-                          >
-                              <Download className="w-7 h-7 mr-4" /> Download Result
-                          </a>
-                      )}
-                  </div>
-              </div>
-          </div>
-      )}
-
-      <style>{`
-        .ease-out-expo {
-          transition-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
-        }
-        .perspective-1000 {
-          perspective: 1000px;
-        }
-        @keyframes gradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 3s linear infinite;
-        }
-        .pdf-shadow {
-            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.2), 0 30px 60px -30px rgba(0,0,0,0.1);
-        }
-      `}</style>
     </div>
   );
 };
