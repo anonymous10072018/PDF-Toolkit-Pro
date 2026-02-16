@@ -90,7 +90,6 @@ const ToolPage: React.FC = () => {
   const handleProcess = async () => {
     if (files.length === 0) return;
     abortControllerRef.current = new AbortController();
-    const originalTotalSize = files.reduce((acc, f) => acc + f.size, 0);
 
     setProcessing({ status: 'processing', progress: 5, message: t.toolPage.initializing });
     
@@ -141,7 +140,6 @@ const ToolPage: React.FC = () => {
         return;
       }
 
-      // Route to correct endpoint
       endpoint = tool.id === 'img-to-pdf' ? API_ENDPOINTS.IMG_TO_PDF :
                  tool.id === 'merge-pdf' ? API_ENDPOINTS.MERGE_PDF :
                  tool.id === 'compress-pdf' ? API_ENDPOINTS.COMPRESS_PDF :
@@ -201,6 +199,16 @@ const ToolPage: React.FC = () => {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         const previews = await generatePreviews(blob);
+        
+        // Detect result type from response headers or tool id
+        const contentType = response.headers.get('content-type')?.toLowerCase() || '';
+        let resultType: ProcessingState['resultType'] = 'pdf';
+        
+        if (contentType.includes('word') || contentType.includes('officedocument') || tool.id === 'pdf-to-word') {
+          resultType = 'word';
+        } else if (contentType.includes('zip') || contentType.includes('octet-stream')) {
+          resultType = 'zip';
+        }
 
         setProcessing({ 
           status: 'success', 
@@ -209,7 +217,7 @@ const ToolPage: React.FC = () => {
           previewUrl: previews[0], 
           previewGallery: previews,
           message: t.toolPage.successTitle,
-          resultType: response.headers.get('content-type')?.includes('word') ? 'word' : 'pdf'
+          resultType: resultType
         });
       }
     } catch (error: any) {
@@ -218,7 +226,7 @@ const ToolPage: React.FC = () => {
         status: 'error', 
         progress: 0, 
         message: error.message.includes('process cannot access the file') 
-          ? "The server is currently busy or the file is locked. Please wait a moment and try again."
+          ? "The server is currently busy. Please wait a moment and try again."
           : error.message
       });
     }
@@ -259,13 +267,22 @@ const ToolPage: React.FC = () => {
     </button>
   );
 
+  // Dynamic extension logic
+  const downloadFileName = useMemo(() => {
+    const baseName = "PDF_Toolkit_Pro_Result";
+    switch (processing.resultType) {
+      case 'word': return `${baseName}.docx`;
+      case 'zip': return `${baseName}.zip`;
+      default: return `${baseName}.pdf`;
+    }
+  }, [processing.resultType]);
+
   return (
     <div className="min-h-screen bg-gray-50 pt-10 pb-20 relative overflow-hidden">
-      {/* Hidden SEO Content for Crawlers */}
       <div className="sr-only">
         <h1>{seoHeader}</h1>
         <h2>{toolDesc}</h2>
-        <p>Use our professional PDF Toolkit to process your documents securely and instantly. This tool provides {toolTitle} functionality with enterprise-grade quality.</p>
+        <p>Use our professional PDF Toolkit to process your documents securely and instantly.</p>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 relative z-10">
@@ -310,7 +327,7 @@ const ToolPage: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="text-lg font-black text-gray-900 mb-2">Booklet Layout</h4>
-                        <p className="text-teal-900 text-sm font-semibold opacity-70">We reorder pages so the printed output can be folded into a professional booklet.</p>
+                        <p className="text-teal-900 text-sm font-semibold opacity-70">Automated imposition for professional folding.</p>
                       </div>
                     </div>
                     <div className="p-8 bg-blue-50/50 rounded-[2.5rem] border border-blue-100 flex items-start">
@@ -319,12 +336,11 @@ const ToolPage: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="text-lg font-black text-gray-900 mb-2">Print Ready</h4>
-                        <p className="text-blue-900 text-sm font-semibold opacity-70">Targeting {totalPagesFound} pages. If needed, we'll add blank pages to make the count divisible by 4.</p>
+                        <p className="text-blue-900 text-sm font-semibold opacity-70">Targeting {totalPagesFound} pages. Divisible by 4.</p>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Printing Tips Card */}
                   <div className="p-10 bg-orange-50/50 rounded-[2.5rem] border border-orange-100 flex flex-col md:flex-row items-center md:items-start text-center md:text-left">
                     <div className="bg-white p-5 rounded-[2rem] md:mr-8 text-orange-600 shadow-xl shadow-orange-100 mb-6 md:mb-0 transform hover:rotate-12 transition-transform">
                       <RotateCw className="w-10 h-10" />
@@ -370,17 +386,12 @@ const ToolPage: React.FC = () => {
               </div>
               <h2 className="text-5xl font-black text-gray-900 mb-4 tracking-tighter">{t.toolPage.successTitle}</h2>
               
-              {tool.id === 'booklet-pdf' && (
-                <div className="bg-orange-50 p-6 rounded-3xl border border-orange-100 max-w-lg mb-10">
-                   <p className="text-orange-900 font-bold text-sm leading-relaxed">
-                     <span className="block mb-2 uppercase tracking-widest text-[10px] opacity-60">Success Tip</span>
-                     {t.toolPage.bookletTipDesc}
-                   </p>
-                </div>
-              )}
-
               <div className="w-full max-w-md space-y-6">
-                <a href={processing.downloadUrl} download="result.pdf" className="w-full py-6 bg-blue-600 text-white rounded-[2rem] font-black text-2xl flex items-center justify-center shadow-2xl hover:bg-blue-700 transition-all transform hover:-translate-y-2">
+                <a 
+                  href={processing.downloadUrl} 
+                  download={downloadFileName} 
+                  className="w-full py-6 bg-blue-600 text-white rounded-[2rem] font-black text-2xl flex items-center justify-center shadow-2xl hover:bg-blue-700 transition-all transform hover:-translate-y-2"
+                >
                   <Download className="mr-4 w-8 h-8" /> {t.toolPage.grabFile}
                 </a>
                 <button onClick={() => setProcessing({ status: 'idle', progress: 0 })} className="w-full py-5 bg-gray-50 text-gray-900 rounded-[2rem] font-black text-lg border-2 border-transparent hover:border-gray-200 transition-all">Start New Conversion</button>
