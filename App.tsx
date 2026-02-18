@@ -1,4 +1,3 @@
-
 import React, { useState, createContext, useContext, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FileStack, Facebook, Mail, Menu, X, ChevronUp, Sparkles } from 'lucide-react';
@@ -29,7 +28,8 @@ export const useLanguage = () => {
 };
 
 // SEO Component to handle dynamic title and meta updates
-const SEOWrapper = ({ children }: { children: React.ReactNode }) => {
+// Fix: Use optional children to avoid 'missing children' error in some TypeScript configurations
+const SEOWrapper = ({ children }: { children?: React.ReactNode }) => {
   const location = useLocation();
   const { t, language } = useLanguage();
 
@@ -288,7 +288,8 @@ const Footer = () => {
   );
 };
 
-const App: React.FC = () => {
+// Fix: Remove React.FC to avoid issues where 'children' prop is incorrectly required in some TS environments
+const App = () => {
   const [language, setLanguage] = useState<Language>('English');
 
   return (

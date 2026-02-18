@@ -49,6 +49,9 @@ export const translations = {
       bookletPdf: 'PDF to Booklet',
       bookletPdfDesc: 'Reorder pages automatically for professional booklet printing.',
       bookletPdfSEO: 'PDF to Booklet Converter - Create Print-Ready Booklets',
+      excelToPdf: 'Excel to PDF',
+      excelToPdfDesc: 'Convert Excel spreadsheets into professional PDF documents.',
+      excelToPdfSEO: 'Excel to PDF Converter - Convert XLS/XLSX to PDF Online Free',
       pdfToImg: 'PDF to Images',
       pdfToImgDesc: 'Convert PDF pages into high-quality JPG or PNG images.',
       pdfToImgSEO: 'PDF to Image Converter - Save PDF as JPG or PNG Online',
@@ -57,7 +60,10 @@ export const translations = {
       pdfToWordSEO: 'PDF to Word Converter - Edit PDF in Microsoft Word Free',
       wordToPdf: 'Word to PDF',
       wordToPdfDesc: 'Convert Microsoft Word files into standard PDF documents.',
-      wordToPdfSEO: 'Word to PDF Converter - Convert DOC/DOCX to PDF Online'
+      wordToPdfSEO: 'Word to PDF Converter - Convert DOC/DOCX to PDF Online',
+      wordToImages: 'Word to Images',
+      wordToImagesDesc: 'Convert Microsoft Word pages into high-quality images.',
+      wordToImagesSEO: 'Word to Image Converter - Save Word Pages as JPG or PNG'
     },
     toolPage: {
       initializing: 'Initializing secure environment...',
@@ -79,9 +85,11 @@ export const translations = {
       hiFiEngineBadge: 'High-Fidelity Engine',
       rasterizing: 'Rasterizing page {i} of {total}...',
       bookletTipTitle: 'Crucial Print Settings',
-      bookletTipDesc: 'Print using "Short Edge Binding" (Flip on Short Edge). If you notice the back side is upside down, switch to "Long Edge Binding" (Flip on Long Edge).'
+      bookletTipDesc: 'Print using "Short Edge Binding" (Flip on Short Edge). If you notice the back side is upside down, switch to "Long Edge Binding" (Flip on Long Edge).',
+      originalSize: 'Original Size',
+      compressedSize: 'Compressed Size',
+      savings: 'Savings'
     },
-    // ... rest of translations remain same
     about: {
       mission: 'Our Mission',
       missionDesc: 'We are dedicated to building the most efficient, secure, and user-friendly document utility suite on the web. PDF Toolkit Pro was born out of the need for professional tools that don\'t track you or cost a fortune.',
@@ -179,6 +187,9 @@ export const translations = {
       bookletPdf: 'PDF a Folleto',
       bookletPdfDesc: 'Reordena las páginas automáticamente para una impresión profesional de folletos.',
       bookletPdfSEO: 'Convertidor de PDF a Folleto - Crear Libritos Listos para Imprimir',
+      excelToPdf: 'Excel a PDF',
+      excelToPdfDesc: 'Convierte hojas de cálculo de Excel en documentos PDF profesionales.',
+      excelToPdfSEO: 'Convertidor de Excel a PDF - Convertir XLS/XLSX a PDF Gratis',
       pdfToImg: 'PDF a Imágenes',
       pdfToImgDesc: 'Convierte páginas PDF en imágenes JPG o PNG de alta calidad.',
       pdfToImgSEO: 'Convertir PDF a Imagen - Guardar PDF como JPG Online',
@@ -187,7 +198,10 @@ export const translations = {
       pdfToWordSEO: 'Convertidor de PDF a Word - Editar PDF en Word Gratis',
       wordToPdf: 'Word a PDF',
       wordToPdfDesc: 'Convierte archivos de Microsoft Word en documentos PDF estándar.',
-      wordToPdfSEO: 'Convertidor de Word a PDF - Convertir DOC/DOCX a PDF Gratis'
+      wordToPdfSEO: 'Convertidor de Word a PDF - Convertir DOC/DOCX a PDF Gratis',
+      wordToImages: 'Word a Imágenes',
+      wordToImagesDesc: 'Convierte páginas de Word en imágenes de alta calidad.',
+      wordToImagesSEO: 'Convertidor de Word a Imágenes - Guardar páginas de Word como JPG o PNG'
     },
     toolPage: {
       initializing: 'Iniciando entorno seguro...',
@@ -209,7 +223,10 @@ export const translations = {
       hiFiEngineBadge: 'Motor de alta fidelidad',
       rasterizing: 'Rasterizando página {i} de {total}...',
       bookletTipTitle: 'Ajustes de Impresión Críticos',
-      bookletTipDesc: 'Imprima usando "Borde Corto". Si nota que el reverso aparece al revés, cambie a "Borde Largo" en los ajustes de su impresora.'
+      bookletTipDesc: 'Imprima usando "Borde Corto". Si nota que el reverso aparece al revés, cambie a "Borde Largo" en los ajustes de su impresora.',
+      originalSize: 'Tamaño Original',
+      compressedSize: 'Tamaño Comprimido',
+      savings: 'Ahorro'
     },
     about: {
       mission: 'Nuestra Misión',
@@ -308,6 +325,9 @@ export const translations = {
       bookletPdf: 'PDF en Livret',
       bookletPdfDesc: 'Réorganisez les pages automatiquement pour une impression de livret professionnelle.',
       bookletPdfSEO: 'Convertisseur PDF en Livret - Créer des Brochures Prêtes à Imprimer',
+      excelToPdf: 'Excel en PDF',
+      excelToPdfDesc: 'Convertissez vos feuilles de calcul Excel en documents PDF professionnels.',
+      excelToPdfSEO: 'Convertisseur Excel en PDF - Convertir XLS/XLSX en PDF Gratuit',
       pdfToImg: 'PDF en Images',
       pdfToImgDesc: 'Convertissez des pages PDF en images JPG ou PNG de haute qualité.',
       pdfToImgSEO: 'Convertir PDF en Image - Enregistrer PDF en JPG en Ligne',
@@ -316,7 +336,10 @@ export const translations = {
       pdfToWordSEO: 'Convertisseur PDF en Word - Modifier PDF dans Word Gratuitement',
       wordToPdf: 'Word en PDF',
       wordToPdfDesc: 'Convertissez des fichiers Microsoft Word en documents PDF standard.',
-      wordToPdfSEO: 'Convertisseur Word en PDF - Convertir DOC/DOCX en PDF Gratuit'
+      wordToPdfSEO: 'Convertisseur Word en PDF - Convertir DOC/DOCX en PDF Gratuit',
+      wordToImages: 'Word en Images',
+      wordToImagesDesc: 'Convertissez des pages Word en images de haute qualité.',
+      wordToImagesSEO: 'Convertisseur Word en Images - Enregistrer des pages Word en JPG ou PNG'
     },
     toolPage: {
       initializing: 'Initialisation de l\'environnement sécurisé...',
@@ -338,7 +361,10 @@ export const translations = {
       hiFiEngineBadge: 'Moteur haute fidélité',
       rasterizing: 'Numérisation de la page {i} sur {total}...',
       bookletTipTitle: 'Paramètres d\'impression cruciaux',
-      bookletTipDesc: 'Imprimez en utilisant le "Bord Court". Si vous remarquez que le verso est à l\'envers, passez au "Bord Long" dans les paramètres de votre imprimante.'
+      bookletTipDesc: 'Imprimez en utilisant le "Bord Court". Si vous remarquez que le verso est à l\'envers, passez au "Bord Long" dans les paramètres de votre imprimante.',
+      originalSize: 'Taille Originale',
+      compressedSize: 'Taille Compressée',
+      savings: 'Économie'
     },
     about: {
       mission: 'Notre Mission',
@@ -363,7 +389,7 @@ export const translations = {
       socialTitle: 'Réseaux Sociaux',
       socialDesc: 'Suivez-nous sur Facebook pour des mises à jour, des tutoriels et une assistance en temps réel.',
       socialButton: 'Voir le profil Facebook',
-      hoursTitle: 'Heures de Support',
+      hoursTitle: 'Support Hours',
       hoursDesc: 'Our team typically responds within 1-2 hours during business hours (Mon-Fri, 9AM-6PM).'
     },
     footer: {
@@ -437,6 +463,9 @@ export const translations = {
       bookletPdf: 'PDF sa Booklet',
       bookletPdfDesc: 'Awtomatikong i-reorder ang mga pahina para sa professional na booklet printing.',
       bookletPdfSEO: 'PDF sa Booklet Converter - Gumawa ng Print-Ready na Booklet Online',
+      excelToPdf: 'Excel sa PDF',
+      excelToPdfDesc: 'I-convert ang Excel spreadsheets sa professional na PDF documents.',
+      excelToPdfSEO: 'Excel sa PDF Converter - I-convert ang XLS/XLSX sa PDF Online',
       pdfToImg: 'PDF sa Images',
       pdfToImgDesc: 'I-convert ang mga pahina ng PDF sa high-quality na JPG o PNG images.',
       pdfToImgSEO: 'PDF sa Image Converter - I-save ang PDF bilang JPG o PNG Online',
@@ -445,7 +474,10 @@ export const translations = {
       pdfToWordSEO: 'PDF sa Word Converter - I-edit ang PDF sa Microsoft Word Libre',
       wordToPdf: 'Word sa PDF',
       wordToPdfDesc: 'I-convert ang mga Microsoft Word files sa standard na PDF documents.',
-      wordToPdfSEO: 'Word sa PDF Converter - I-convert ang DOC/DOCX sa PDF Online'
+      wordToPdfSEO: 'Word sa PDF Converter - I-convert ang DOC/DOCX sa PDF Online',
+      wordToImages: 'Word sa Images',
+      wordToImagesDesc: 'I-convert ang Word pages sa high-quality images.',
+      wordToImagesSEO: 'Word sa Images Converter - I-save ang Word Pages bilang JPG o PNG Online'
     },
     toolPage: {
       initializing: 'Inihahanda ang secure na environment...',
@@ -467,7 +499,10 @@ export const translations = {
       hiFiEngineBadge: 'High-Fidelity Engine',
       rasterizing: 'Pinoproseso ang pahina {i} ng {total}...',
       bookletTipTitle: 'Mahalagang Settings sa Pag-print',
-      bookletTipDesc: 'I-print gamit ang "Short Edge Binding". Kung pabaliktad ang likod ng papel, palitan ang iyong settings sa "Long Edge Binding".'
+      bookletTipDesc: 'I-print gamit ang "Short Edge Binding". Kung pabaliktad ang likod ng papel, palitan ang iyong settings sa "Long Edge Binding".',
+      originalSize: 'Orihinal na Laki',
+      compressedSize: 'Compressed na Laki',
+      savings: 'Natipid'
     },
     about: {
       mission: 'Ang Aming Misyon',

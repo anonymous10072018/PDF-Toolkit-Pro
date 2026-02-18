@@ -8,7 +8,9 @@ import {
   Image as ImageIcon, 
   FileText, 
   FileOutput,
-  BookOpen
+  BookOpen,
+  FileSpreadsheet,
+  FileImageIcon
 } from 'lucide-react';
 import { PDFTool } from './types';
 
@@ -23,6 +25,8 @@ export const API_ENDPOINTS = {
   SPLIT_PDF_RANGE: `${API_BASE_URL}/SplitPdfRange`,
   SPLIT_PDF: `${API_BASE_URL}/SplitPdf`,
   PDF_TO_BOOKLET: `${API_BASE_URL}/PdfToBooklet`,
+  EXCEL_TO_PDF: `${API_BASE_URL}/ExcelToPdf`,
+  WORD_TO_IMAGES: `${API_BASE_URL}/WordToImages`,
 };
 
 export const TOOLS: (PDFTool & { titleKey: string; descKey: string })[] = [
@@ -72,6 +76,15 @@ export const TOOLS: (PDFTool & { titleKey: string; descKey: string })[] = [
     color: 'bg-teal-500'
   },
   {
+    id: 'excel-to-pdf',
+    title: 'Excel to PDF',
+    titleKey: 'excelToPdf',
+    description: 'Convert Excel spreadsheets into professional PDF documents.',
+    descKey: 'excelToPdfDesc',
+    icon: <FileSpreadsheet className="w-8 h-8" />,
+    color: 'bg-green-600'
+  },
+  {
     id: 'pdf-to-img',
     title: 'PDF to Images',
     titleKey: 'pdfToImg',
@@ -97,5 +110,14 @@ export const TOOLS: (PDFTool & { titleKey: string; descKey: string })[] = [
     descKey: 'wordToPdfDesc',
     icon: <FileOutput className="w-8 h-8" />,
     color: 'bg-blue-600'
+  },
+  {
+    id: 'word-to-images',
+    title: 'Word to Images',
+    titleKey: 'wordToImages',
+    description: 'Convert Microsoft Word pages into high-quality images.',
+    descKey: 'wordToImagesDesc',
+    icon: <FileImageIcon className="w-8 h-8" />,
+    color: 'bg-pink-500'
   }
 ];

@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, Play, Download, Sparkles, RefreshCw, 
   FileWarning, XCircle, CheckCircle, ShieldCheck, Info,
-  Star, Eye, List, BookOpen, Layout, Printer, RotateCw
+  Star, Eye, List, BookOpen, Layout, Printer, RotateCw, Image as ImageIcon, Settings2, Minimize2
 } from 'lucide-react';
 import { TOOLS, API_ENDPOINTS } from '../constants';
 import Dropzone from './Dropzone';
@@ -22,6 +22,15 @@ interface ResultFile {
   previewUrl?: string;
   type: string;
 }
+
+const formatBytes = (bytes: number, decimals = 2) => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
 
 const ToolPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -44,8 +53,8 @@ const ToolPage: React.FC = () => {
   const toolDesc = tool ? t.tools[tool.descKey] : '';
   const seoHeader = tool ? (t.tools[`${tool.id}SEO`] || toolTitle) : toolTitle;
 
-  const usesHighFidelityEngine = useMemo(() => {
-    return ['pdf-to-word', 'word-to-pdf', 'compress-pdf', 'pdf-to-img', 'booklet-pdf'].includes(tool?.id || '');
+  const hasOptions = useMemo(() => {
+    return tool?.id === 'pdf-to-img' || tool?.id === 'word-to-images';
   }, [tool?.id]);
 
   useEffect(() => {
@@ -82,7 +91,9 @@ const ToolPage: React.FC = () => {
       case 'pdf-to-img': 
       case 'booklet-pdf':
       case 'pdf-to-word': return "application/pdf";
-      case 'word-to-pdf': return ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      case 'word-to-pdf':
+      case 'word-to-images': return ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      case 'excel-to-pdf': return ".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
       default: return "*";
     }
   };
@@ -146,13 +157,21 @@ const ToolPage: React.FC = () => {
                  tool.id === 'pdf-to-word' ? API_ENDPOINTS.PDF_TO_WORD :
                  tool.id === 'word-to-pdf' ? API_ENDPOINTS.WORD_TO_PDF :
                  tool.id === 'split-pdf' ? API_ENDPOINTS.SPLIT_PDF :
-                 tool.id === 'booklet-pdf' ? API_ENDPOINTS.PDF_TO_BOOKLET : '';
+                 tool.id === 'booklet-pdf' ? API_ENDPOINTS.PDF_TO_BOOKLET : 
+                 tool.id === 'excel-to-pdf' ? API_ENDPOINTS.EXCEL_TO_PDF :
+                 tool.id === 'word-to-images' ? API_ENDPOINTS.WORD_TO_IMAGES : '';
 
       if (['img-to-pdf', 'merge-pdf'].includes(tool.id)) {
         files.forEach(f => formData.append('files', f));
       } else {
         formData.append('file', files[0]);
       }
+
+      if (tool.id === 'word-to-images') {
+        formData.append('format', imgFormat);
+      }
+
+      const originalSize = tool.id === 'compress-pdf' ? files[0].size : undefined;
 
       if (endpoint) {
         setProcessing(prev => ({ ...prev, progress: 20, message: t.toolPage.uploading }));
@@ -169,13 +188,36 @@ const ToolPage: React.FC = () => {
         
         setProcessing(prev => ({ ...prev, progress: 70, message: t.toolPage.finalizing }));
 
+        if (tool.id === 'word-to-images') {
+          const data = await response.json();
+          const zip = new JSZip();
+          const ext = imgFormat === 'jpeg' ? 'jpg' : 'png';
+          const mime = imgFormat === 'jpeg' ? 'image/jpeg' : 'image/png';
+          
+          for (let i = 0; i < data.pages.length; i++) {
+            const imgBlob = base64ToBlob(data.pages[i], mime);
+            zip.file(`Page_${i + 1}.${ext}`, imgBlob);
+          }
+          
+          const zipBlob = await zip.generateAsync({ type: 'blob' });
+          setProcessing({ 
+            status: 'success', 
+            progress: 100, 
+            downloadUrl: URL.createObjectURL(zipBlob), 
+            previewUrl: `data:${mime};base64,${data.pages[0]}`,
+            message: `${t.toolPage.successTitle} Extracted ${data.pages.length} images.`,
+            resultType: 'zip' 
+          });
+          return;
+        }
+
         if (tool.id === 'split-pdf') {
           const data = await response.json();
           const zip = new JSZip();
           const previews: string[] = [];
           
           for (let i = 0; i < data.pages.length; i++) {
-            const pdfBlob = base64ToBlob(data.pages[i]);
+            const pdfBlob = base64ToBlob(data.pages[i], 'application/pdf');
             zip.file(`Page_${i + 1}.pdf`, pdfBlob);
             if (i < 5) {
               const p = await generatePreviews(pdfBlob);
@@ -200,7 +242,6 @@ const ToolPage: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const previews = await generatePreviews(blob);
         
-        // Detect result type from response headers or tool id
         const contentType = response.headers.get('content-type')?.toLowerCase() || '';
         let resultType: ProcessingState['resultType'] = 'pdf';
         
@@ -217,7 +258,9 @@ const ToolPage: React.FC = () => {
           previewUrl: previews[0], 
           previewGallery: previews,
           message: t.toolPage.successTitle,
-          resultType: resultType
+          resultType: resultType,
+          originalSize: originalSize,
+          compressedSize: tool.id === 'compress-pdf' ? blob.size : undefined
         });
       }
     } catch (error: any) {
@@ -250,11 +293,11 @@ const ToolPage: React.FC = () => {
     } catch { return []; }
   };
 
-  const base64ToBlob = (b64: string) => {
+  const base64ToBlob = (b64: string, type: string) => {
     const s = atob(b64);
     const a = new Uint8Array(s.length);
     for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
-    return new Blob([a], { type: 'application/pdf' });
+    return new Blob([a], { type });
   };
 
   const launchButton = (
@@ -267,7 +310,6 @@ const ToolPage: React.FC = () => {
     </button>
   );
 
-  // Dynamic extension logic
   const downloadFileName = useMemo(() => {
     const baseName = "PDF_Toolkit_Pro_Result";
     switch (processing.resultType) {
@@ -276,6 +318,14 @@ const ToolPage: React.FC = () => {
       default: return `${baseName}.pdf`;
     }
   }, [processing.resultType]);
+
+  const compressionSavings = useMemo(() => {
+    if (processing.originalSize && processing.compressedSize) {
+      const savings = 100 - (processing.compressedSize / processing.originalSize * 100);
+      return savings.toFixed(1);
+    }
+    return null;
+  }, [processing.originalSize, processing.compressedSize]);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-10 pb-20 relative overflow-hidden">
@@ -292,7 +342,7 @@ const ToolPage: React.FC = () => {
 
         <div className="bg-white/95 backdrop-blur-xl rounded-[4rem] border border-white/20 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] p-10 md:p-16 relative">
           
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-16 gap-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-10">
             <div className="flex items-center space-x-10">
               <div className={`${tool.color} w-28 h-28 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl transform -rotate-3`}>
                 {React.cloneElement(tool.icon as React.ReactElement<any>, { className: 'w-14 h-14' })}
@@ -310,6 +360,35 @@ const ToolPage: React.FC = () => {
 
           {processing.status === 'idle' && (
             <div className="animate-in fade-in zoom-in-95 duration-500">
+              {hasOptions && (
+                <div className="mb-12 p-10 bg-white rounded-[3rem] border border-gray-100 shadow-xl shadow-blue-900/[0.02] flex flex-col md:flex-row items-center justify-between gap-8 transition-all hover:border-blue-200">
+                  <div className="flex items-center">
+                    <div className="bg-blue-50 p-4 rounded-2xl mr-6 text-blue-600">
+                      <Settings2 className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-gray-900 tracking-tight">Conversion Options</h3>
+                      <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Select your preferred output format</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex bg-gray-50 p-2 rounded-[1.75rem] border border-gray-100 w-full md:w-auto">
+                    <button 
+                      onClick={() => setImgFormat('jpeg')}
+                      className={`flex-1 md:flex-none px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all ${imgFormat === 'jpeg' ? 'bg-blue-600 text-white shadow-xl shadow-blue-200 scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-white'}`}
+                    >
+                      JPEG
+                    </button>
+                    <button 
+                      onClick={() => setImgFormat('png')}
+                      className={`flex-1 md:flex-none px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all ${imgFormat === 'png' ? 'bg-blue-600 text-white shadow-xl shadow-blue-200 scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-white'}`}
+                    >
+                      PNG
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <Dropzone 
                 onFilesSelected={setFiles} 
                 accept={getAcceptedFiles()}
@@ -340,18 +419,6 @@ const ToolPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="p-10 bg-orange-50/50 rounded-[2.5rem] border border-orange-100 flex flex-col md:flex-row items-center md:items-start text-center md:text-left">
-                    <div className="bg-white p-5 rounded-[2rem] md:mr-8 text-orange-600 shadow-xl shadow-orange-100 mb-6 md:mb-0 transform hover:rotate-12 transition-transform">
-                      <RotateCw className="w-10 h-10" />
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-black text-gray-900 mb-3 tracking-tight">{t.toolPage.bookletTipTitle}</h4>
-                      <p className="text-orange-900 text-base font-bold leading-relaxed opacity-80 max-w-2xl">
-                        {t.toolPage.bookletTipDesc}
-                      </p>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -372,7 +439,7 @@ const ToolPage: React.FC = () => {
 
           {processing.status === 'success' && (
             <div className="py-10 flex flex-col items-center text-center animate-in zoom-in-95 duration-700">
-              <div className="mb-16">
+              <div className="mb-12">
                 <div className="relative p-6 bg-white rounded-[3rem] shadow-2xl border border-gray-100 max-w-sm mx-auto">
                   {processing.previewUrl ? (
                     <img src={processing.previewUrl} className="w-full rounded-2xl shadow-sm" alt="Preview" />
@@ -384,6 +451,30 @@ const ToolPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {tool.id === 'compress-pdf' && processing.originalSize && processing.compressedSize && (
+                <div className="w-full max-w-2xl grid grid-cols-3 gap-6 mb-12 animate-in slide-in-from-bottom-8 duration-1000">
+                  <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 text-center">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t.toolPage.originalSize}</p>
+                    <p className="text-lg font-black text-gray-900">{formatBytes(processing.originalSize)}</p>
+                  </div>
+                  <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 text-center relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-2 opacity-5">
+                       <Minimize2 className="w-12 h-12 text-blue-600" />
+                    </div>
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">{t.toolPage.compressedSize}</p>
+                    <p className="text-lg font-black text-blue-900">{formatBytes(processing.compressedSize)}</p>
+                  </div>
+                  <div className="bg-green-50 p-6 rounded-3xl border border-green-100 text-center relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-2 opacity-10">
+                       <Sparkles className="w-12 h-12 text-green-600" />
+                    </div>
+                    <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-2">{t.toolPage.savings}</p>
+                    <p className="text-2xl font-black text-green-700">-{compressionSavings}%</p>
+                  </div>
+                </div>
+              )}
+
               <h2 className="text-5xl font-black text-gray-900 mb-4 tracking-tighter">{t.toolPage.successTitle}</h2>
               
               <div className="w-full max-w-md space-y-6">
