@@ -22,6 +22,13 @@ import { PDFTool } from './types';
 
 export const API_BASE_URL = 'https://possysstemapi.runasp.net/api/ImagetoPdfConversion';
 
+/**
+ * Secured Client Key for API Authorization. 
+ * Note: In a production environment, sensitive keys should be managed via environment 
+ * variables or a secure vault.
+ */
+export const CLIENT_KEY = '72f8a1c4-9b2e-4d5a-8f3c-1a2b3c4d5e6f';
+
 export const API_ENDPOINTS = {
   IMG_TO_PDF: `${API_BASE_URL}/ConvertImagesToPdf`,
   MERGE_PDF: `${API_BASE_URL}/MergePdf`,

@@ -1,8 +1,6 @@
-
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Upload, X, AlertCircle, ChevronLeft, ChevronRight, 
-  GripVertical, FileText, Move
+  Upload, X, FileText, Move, GripVertical, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 import * as pdfjs from 'pdfjs-dist';
 
@@ -77,7 +75,6 @@ const FilePreviewCard: React.FC<{
         ${isDraggingItem ? 'opacity-0 scale-90 grayscale' : 'border-gray-100 shadow-sm hover:shadow-2xl hover:border-blue-400'}
         ${showReorder ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
-      {/* Poster / Drag Handle Area */}
       <div className="relative aspect-[3/4] bg-gray-50 flex items-center justify-center overflow-hidden border-b border-gray-100">
         {thumbnail ? (
           <img src={thumbnail} alt={file.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" />
@@ -93,17 +90,15 @@ const FilePreviewCard: React.FC<{
           </div>
         )}
         
-        {/* Index Badge */}
         <div className="absolute top-3 left-3 w-7 h-7 bg-black/60 backdrop-blur-md rounded-xl flex items-center justify-center text-white text-[10px] font-black shadow-lg border border-white/20">
           {index + 1}
         </div>
 
-        {/* Drag Interaction Overlay */}
         {showReorder && (
           <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/5 transition-colors duration-300 flex items-center justify-center pointer-events-none">
              <div className="opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 bg-white/95 backdrop-blur-md px-4 py-2 rounded-full flex items-center shadow-xl scale-75 border border-blue-100">
                <Move className="w-4 h-4 text-blue-600 mr-2" />
-               <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Hold Poster to Move</span>
+               <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Hold to Move</span>
              </div>
           </div>
         )}
@@ -117,7 +112,6 @@ const FilePreviewCard: React.FC<{
         </button>
       </div>
 
-      {/* Card Body */}
       <div className="p-4 flex-grow flex flex-col justify-between">
         <div className="mb-3">
           <p className="text-[11px] font-black text-gray-900 truncate tracking-tight" title={file.name}>{file.name}</p>
@@ -153,7 +147,6 @@ const FilePreviewCard: React.FC<{
 const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, accept = "*", multiple = true, actionButton, showReorder = false }) => {
   const [isDraggingRoot, setIsDraggingRoot] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const validateFiles = (files: File[]): File[] => {
@@ -187,12 +180,6 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, accept = "*", mult
     e.target.value = '';
   };
 
-  const handleItemDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    // Create custom ghost image if needed, but default is fine
-  };
-
   const handleItemDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
     if (draggedIndex === null || draggedIndex === index) return;
@@ -210,15 +197,15 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, accept = "*", mult
         onDragOver={(e) => { e.preventDefault(); setIsDraggingRoot(true); }}
         onDragLeave={() => setIsDraggingRoot(false)}
         onDrop={handleDropRoot}
-        className={`relative border-2 border-dashed rounded-[2.5rem] p-16 transition-all duration-500 flex flex-col items-center justify-center group cursor-pointer
+        className={`relative border-2 border-dashed rounded-[3.5rem] p-16 transition-all duration-500 flex flex-col items-center justify-center group cursor-pointer
           ${isDraggingRoot ? 'border-blue-500 bg-blue-50/20 scale-[0.99]' : 'border-gray-200 bg-gray-50/10 hover:bg-white hover:border-blue-400 hover:shadow-2xl hover:shadow-blue-100/10'}`}
       >
         <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" multiple={multiple} accept={accept} onChange={handleInputChange} />
         <div className={`p-6 rounded-3xl transition-all duration-500 ${isDraggingRoot ? 'bg-blue-600 text-white scale-110 shadow-lg' : 'bg-white text-gray-400 group-hover:bg-blue-600 group-hover:text-white group-hover:scale-105 shadow-sm'}`}>
           <Upload className="w-10 h-10" />
         </div>
-        <h3 className="mt-8 text-2xl font-black text-gray-900 tracking-tight">Drop files here</h3>
-        <p className="mt-2 text-gray-400 font-bold italic text-sm">Secure and instant processing</p>
+        <h3 className="mt-8 text-2xl font-black text-gray-900 tracking-tight">Drop files or click to browse</h3>
+        <p className="mt-2 text-gray-400 font-bold italic text-sm">Secure local processing</p>
       </div>
 
       {selectedFiles.length > 0 && (
@@ -256,7 +243,7 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, accept = "*", mult
                   setSelectedFiles(newFiles);
                   onFilesSelected(newFiles);
                 }}
-                onDragStart={handleItemDragStart}
+                onDragStart={(e, i) => { setDraggedIndex(i); e.dataTransfer.effectAllowed = 'move'; }}
                 onDragOver={handleItemDragOver}
                 onDragEnd={() => setDraggedIndex(null)}
                 onDrop={(e) => { e.preventDefault(); setDraggedIndex(null); }}
