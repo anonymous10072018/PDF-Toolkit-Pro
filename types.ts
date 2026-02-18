@@ -12,7 +12,13 @@ export type ToolType =
   | 'word-to-pdf'
   | 'booklet-pdf'
   | 'excel-to-pdf'
-  | 'word-to-images';
+  | 'word-to-images'
+  | 'add-watermark'
+  | 'add-image-watermark'
+  | 'encrypt-pdf'
+  | 'add-dynamic-alert'
+  | 'add-advanced-annotation'
+  | 'rearrange-pdf';
 
 export interface PDFTool {
   id: ToolType;

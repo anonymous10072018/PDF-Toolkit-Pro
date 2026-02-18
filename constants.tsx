@@ -10,7 +10,13 @@ import {
   FileOutput,
   BookOpen,
   FileSpreadsheet,
-  FileImageIcon
+  FileImageIcon,
+  Stamp,
+  ImagePlus,
+  Lock,
+  Bell,
+  MessageSquarePlus,
+  ArrowDownUp
 } from 'lucide-react';
 import { PDFTool } from './types';
 
@@ -27,6 +33,12 @@ export const API_ENDPOINTS = {
   PDF_TO_BOOKLET: `${API_BASE_URL}/PdfToBooklet`,
   EXCEL_TO_PDF: `${API_BASE_URL}/ExcelToPdf`,
   WORD_TO_IMAGES: `${API_BASE_URL}/WordToImages`,
+  ADD_WATERMARK: `${API_BASE_URL}/AddWatermark`,
+  ADD_IMAGE_WATERMARK: `${API_BASE_URL}/AddImageWatermark`,
+  ENCRYPT_PDF: `${API_BASE_URL}/EncryptPdf`,
+  ADD_DYNAMIC_ALERT: `${API_BASE_URL}/AddDynamicAlert`,
+  ADD_ADVANCED_ANNOTATION: `${API_BASE_URL}/AddAdvancedAnnotation`,
+  REARRANGE_PDF: `${API_BASE_URL}/RearrangePdfPages`,
 };
 
 export const TOOLS: (PDFTool & { titleKey: string; descKey: string })[] = [
@@ -49,6 +61,15 @@ export const TOOLS: (PDFTool & { titleKey: string; descKey: string })[] = [
     color: 'bg-indigo-500'
   },
   {
+    id: 'rearrange-pdf',
+    title: 'Rearrange Pages',
+    titleKey: 'rearrangePdf',
+    description: 'Change the order of pages in your PDF file visually.',
+    descKey: 'rearrangePdfDesc',
+    icon: <ArrowDownUp className="w-8 h-8" />,
+    color: 'bg-cyan-500'
+  },
+  {
     id: 'split-pdf',
     title: 'Split PDF',
     titleKey: 'splitPdf',
@@ -65,6 +86,51 @@ export const TOOLS: (PDFTool & { titleKey: string; descKey: string })[] = [
     descKey: 'compressPdfDesc',
     icon: <Minimize2 className="w-8 h-8" />,
     color: 'bg-green-500'
+  },
+  {
+    id: 'add-advanced-annotation',
+    title: 'Advanced Annotation',
+    titleKey: 'addAdvancedAnnotation',
+    description: 'Add shaped notes with custom colors and choose between square or circle.',
+    descKey: 'addAdvancedAnnotationDesc',
+    icon: <MessageSquarePlus className="w-8 h-8" />,
+    color: 'bg-orange-600'
+  },
+  {
+    id: 'encrypt-pdf',
+    title: 'Encrypt PDF',
+    titleKey: 'encryptPdf',
+    description: 'Secure your PDF with a password using enterprise-grade encryption.',
+    descKey: 'encryptPdfDesc',
+    icon: <Lock className="w-8 h-8" />,
+    color: 'bg-slate-700'
+  },
+  {
+    id: 'add-dynamic-alert',
+    title: 'Add Alert',
+    titleKey: 'addDynamicAlert',
+    description: 'Embed a popup message that triggers when the PDF is opened.',
+    descKey: 'addDynamicAlertDesc',
+    icon: <Bell className="w-8 h-8" />,
+    color: 'bg-indigo-600'
+  },
+  {
+    id: 'add-watermark',
+    title: 'Add Watermark',
+    titleKey: 'addWatermark',
+    description: 'Apply text watermarks to all pages of your PDF document.',
+    descKey: 'addWatermarkDesc',
+    icon: <Stamp className="w-8 h-8" />,
+    color: 'bg-rose-500'
+  },
+  {
+    id: 'add-image-watermark',
+    title: 'Image Watermark',
+    titleKey: 'addImageWatermark',
+    description: 'Overlay an image as a transparent watermark on your PDF pages.',
+    descKey: 'addImageWatermarkDesc',
+    icon: <ImagePlus className="w-8 h-8" />,
+    color: 'bg-amber-500'
   },
   {
     id: 'booklet-pdf',
