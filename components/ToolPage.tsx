@@ -5,13 +5,14 @@ import {
   ChevronLeft, Play, Download, Sparkles, RefreshCw, 
   FileWarning, XCircle, CheckCircle, ShieldCheck, Info,
   Star, Eye, List, BookOpen, Layout, Printer, RotateCw, Image as ImageIcon, Settings2, Minimize2, Type, Stamp, ImagePlus, Upload, Lock, Shield, Bell, MessageSquare, MessageSquarePlus, Palette, Layers, Square, Circle, Hash, ArrowDownUp, Move, RotateCcw,
-  FileText, ChevronRight, HelpCircle, AlertTriangle, Search, Zap, Maximize, ArrowDown, Check
+  FileText, ChevronRight, HelpCircle, AlertTriangle, Search, Zap, Maximize, ArrowDown, Check, Globe
 } from 'lucide-react';
 import { TOOLS, API_ENDPOINTS, CLIENT_KEY } from '../constants';
 import Dropzone from './Dropzone';
 import { ProcessingState } from '../types';
 import * as pdfjs from 'pdfjs-dist';
 import JSZip from 'jszip';
+import { motion, AnimatePresence } from 'motion/react';
 import { useLanguage } from '../App';
 
 // Configure PDF.js worker
@@ -36,6 +37,7 @@ const ToolPage: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [watermarkImage, setWatermarkImage] = useState<File | null>(null);
   const [imgFormat, setImgFormat] = useState<'jpeg' | 'png'>('jpeg');
+  const [websiteUrl, setWebsiteUrl] = useState('');
 
   // Customization States
   const [watermarkText, setWatermarkText] = useState('CONFIDENTIAL');
@@ -57,6 +59,10 @@ const ToolPage: React.FC = () => {
   const [loadingThumbnails, setLoadingThumbnails] = useState(false);
   const [totalPagesFound, setTotalPagesFound] = useState<number>(1);
   const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
+
+  // Extract Images State
+  const [extractedImages, setExtractedImages] = useState<{name: string, url: string, blob: Blob}[]>([]);
+  const [selectedImageIndices, setSelectedImageIndices] = useState<Set<number>>(new Set());
   
   const [processing, setProcessing] = useState<ProcessingState>({
     status: 'idle',
@@ -76,6 +82,7 @@ const ToolPage: React.FC = () => {
   const isCompression = useMemo(() => tool?.id === 'compress-pdf', [tool?.id]);
   const isBooklet = useMemo(() => tool?.id === 'booklet-pdf', [tool?.id]);
   const isPdfToImg = useMemo(() => tool?.id === 'pdf-to-img', [tool?.id]);
+  const isExtractImages = useMemo(() => tool?.id === 'extract-images', [tool?.id]);
 
   const relatedTools = useMemo(() => {
     return TOOLS.filter(item => item.id !== id).slice(0, 3);
@@ -161,8 +168,14 @@ const ToolPage: React.FC = () => {
   };
 
   const handleProcess = async () => {
-    if (files.length === 0) return;
+    if (!isExtractImages && files.length === 0) return;
+    if (isExtractImages && !websiteUrl) return;
     if (isImageWatermark && !watermarkImage) return;
+
+    if (isExtractImages) {
+      setExtractedImages([]);
+      setSelectedImageIndices(new Set());
+    }
 
     abortControllerRef.current = new AbortController();
     setProcessing({ status: 'processing', progress: 5, message: t.toolPage.initializing });
@@ -173,9 +186,11 @@ const ToolPage: React.FC = () => {
       
       if (!endpoint) throw new Error("Endpoint configuration missing for this tool.");
 
-      const originalFileSize = isCompression ? files[0].size : undefined;
+      const originalFileSize = isCompression ? files[0]?.size : undefined;
 
-      if (['img-to-pdf', 'merge-pdf'].includes(tool.id)) { 
+      if (isExtractImages) {
+        formData.append('url', websiteUrl);
+      } else if (['img-to-pdf', 'merge-pdf'].includes(tool.id)) { 
         files.forEach(f => formData.append('files', f)); 
       } 
       else if (isImageWatermark) { 
@@ -258,6 +273,30 @@ const ToolPage: React.FC = () => {
       if (resultType === 'pdf') {
         previews = await generatePreviews(blob);
       } else if (resultType === 'zip') {
+        if (isExtractImages) {
+          const zip = await JSZip.loadAsync(blob);
+          const imageFiles = Object.values(zip.files).filter(f => !f.dir);
+          
+          // Parallel processing for faster retrieval
+          const images = await Promise.all(imageFiles.map(async (file) => {
+            const fileBlob = await file.async('blob');
+            return {
+              name: file.name,
+              url: URL.createObjectURL(fileBlob),
+              blob: fileBlob
+            };
+          }));
+
+          setExtractedImages(images);
+          setSelectedImageIndices(new Set(images.map((_, i) => i))); // Select all by default
+          setProcessing({ 
+            status: 'success', 
+            progress: 100, 
+            message: t.toolPage.successTitle,
+            resultType: 'zip'
+          });
+          return;
+        }
         previews = await getPreviewsFromZip(blob);
       }
 
@@ -328,6 +367,40 @@ const ToolPage: React.FC = () => {
     return new Blob([a], { type });
   };
 
+  const handleDownloadSelected = async () => {
+    if (selectedImageIndices.size === 0) return;
+    const zip = new JSZip();
+    extractedImages.forEach((img, i) => {
+      if (selectedImageIndices.has(i)) {
+        zip.file(img.name, img.blob);
+      }
+    });
+    const content = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(content);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Selected_Images_${new Date().getTime()}.zip`;
+    link.click();
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedImageIndices.size === extractedImages.length) {
+      setSelectedImageIndices(new Set());
+    } else {
+      setSelectedImageIndices(new Set(extractedImages.map((_, i) => i)));
+    }
+  };
+
+  const toggleImageSelection = (index: number) => {
+    const newSelection = new Set(selectedImageIndices);
+    if (newSelection.has(index)) {
+      newSelection.delete(index);
+    } else {
+      newSelection.add(index);
+    }
+    setSelectedImageIndices(newSelection);
+  };
+
   const launchButton = (
     <button onClick={handleProcess} className="px-10 py-5 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
       <Play className="mr-3 w-5 h-5 fill-current" /> {t.toolPage.processNow}
@@ -361,11 +434,41 @@ const ToolPage: React.FC = () => {
             </div>
           </div>
 
+          {isExtractImages && processing.status !== 'processing' && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-12 bg-violet-50 p-10 rounded-[3rem] border border-violet-100 shadow-sm"
+            >
+              <div className="flex items-center mb-8">
+                <div className="bg-white p-4 rounded-2xl mr-6 text-violet-600 shadow-sm"><Search className="w-6 h-6" /></div>
+                <h3 className="text-2xl font-black text-gray-900 tracking-tight">Website URL</h3>
+              </div>
+              <div className="flex flex-col gap-6">
+                <div className="relative w-full">
+                  <Globe className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-violet-300" />
+                  <input 
+                    type="url" 
+                    value={websiteUrl} 
+                    onChange={(e) => setWebsiteUrl(e.target.value)} 
+                    placeholder="https://example.com/very-long-url-path-that-needs-to-be-visible" 
+                    className="w-full pl-20 pr-8 py-6 bg-white border border-violet-100 rounded-[2.5rem] font-bold text-xl text-gray-900 focus:ring-4 focus:ring-violet-200 focus:outline-none shadow-inner transition-all" 
+                  />
+                </div>
+                <div className="flex justify-end">
+                  {launchButton}
+                </div>
+              </div>
+              <p className="mt-6 text-violet-900/60 font-bold text-sm italic ml-2">We'll crawl the page and package all found images into a single ZIP file.</p>
+            </motion.div>
+          )}
+
           {processing.status === 'idle' && (
             <div className="animate-in fade-in zoom-in-95 duration-500">
               
-              <div className="grid grid-cols-1 gap-12 mb-12">
-                {isAnnotation && (
+              {!isExtractImages && (
+                <div className="grid grid-cols-1 gap-12 mb-12">
+                  {isAnnotation && (
                   <div className="bg-blue-50/50 p-10 rounded-[3rem] border border-blue-100 shadow-sm">
                     <div className="flex items-center mb-10">
                       <div className="bg-white p-4 rounded-2xl mr-6 text-blue-600 shadow-sm"><Settings2 className="w-6 h-6" /></div>
@@ -482,6 +585,7 @@ const ToolPage: React.FC = () => {
                   </div>
                 )}
               </div>
+              )}
 
               {isImageWatermark && (
                 <div className="mb-12 bg-amber-50 p-8 rounded-[3rem] border border-amber-100 flex flex-col items-center">
@@ -545,7 +649,7 @@ const ToolPage: React.FC = () => {
                   )}
                 </div>
               )}
-              {(!isRearrange || files.length === 0) && (
+              {(!isRearrange && !isExtractImages || (isRearrange && files.length === 0)) && (
                 <Dropzone 
                   onFilesSelected={setFiles} 
                   accept={tool.id==='img-to-pdf'?"image/*":tool.id==='word-to-pdf'||tool.id==='word-to-images'?".doc,.docx":tool.id==='excel-to-pdf'?".xls,.xlsx":"application/pdf"} 
@@ -574,8 +678,63 @@ const ToolPage: React.FC = () => {
 
           {processing.status === 'success' && (
             <div className="py-10 flex flex-col items-center text-center animate-in zoom-in-95 duration-700">
-              <div className="mb-16 relative w-full max-w-2xl mx-auto flex flex-col items-center">
-                {processing.resultType === 'zip' ? (
+              {isExtractImages && extractedImages.length > 0 ? (
+                <div className="w-full">
+                  <div className="flex flex-col md:flex-row items-center justify-between mb-12 bg-violet-50 p-8 rounded-[3rem] border border-violet-100 shadow-sm gap-6">
+                    <div className="flex items-center">
+                      <div className="bg-white p-5 rounded-[1.75rem] mr-6 text-violet-600 shadow-sm"><ImageIcon className="w-8 h-8" /></div>
+                      <div className="text-left">
+                        <h3 className="text-2xl font-black text-gray-900 tracking-tight">Images Found: {extractedImages.length}</h3>
+                        <p className="text-violet-900/60 font-bold text-sm">Selected: <span className="text-violet-600">{selectedImageIndices.size}</span></p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <button 
+                        onClick={toggleSelectAll} 
+                        className="px-8 py-4 bg-white text-violet-700 rounded-2xl font-black text-xs uppercase tracking-widest border border-violet-200 shadow-sm hover:bg-violet-50 transition-all"
+                      >
+                        {selectedImageIndices.size === extractedImages.length ? 'Deselect All' : 'Select All'}
+                      </button>
+                      <button 
+                        onClick={handleDownloadSelected} 
+                        disabled={selectedImageIndices.size === 0}
+                        className={`px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl transition-all flex items-center justify-center ${selectedImageIndices.size > 0 ? 'bg-violet-600 text-white hover:bg-violet-700 hover:scale-105 active:scale-95' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                      >
+                        <Download className="mr-3 w-5 h-5" /> Download Selected
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                    <AnimatePresence mode="popLayout">
+                      {extractedImages.map((img, i) => (
+                        <motion.div 
+                          key={img.name + i}
+                          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          transition={{ 
+                            duration: 0.4, 
+                            delay: Math.min(i * 0.05, 1.5), // Staggered entry, capped at 1.5s
+                            type: "spring",
+                            stiffness: 100
+                          }}
+                          onClick={() => toggleImageSelection(i)}
+                          className={`group relative aspect-square bg-white rounded-[2rem] border-4 overflow-hidden cursor-pointer transition-all duration-300 ${selectedImageIndices.has(i) ? 'border-violet-600 shadow-2xl scale-105' : 'border-gray-100 hover:border-violet-200'}`}
+                        >
+                          <img src={img.url} className="w-full h-full object-cover" alt={img.name} />
+                          <div className={`absolute top-4 right-4 w-8 h-8 rounded-xl flex items-center justify-center transition-all ${selectedImageIndices.has(i) ? 'bg-violet-600 text-white shadow-lg' : 'bg-white/80 backdrop-blur-md text-gray-300'}`}>
+                            {selectedImageIndices.has(i) ? <Check className="w-5 h-5" /> : <div className="w-3 h-3 rounded-full border-2 border-gray-200" />}
+                          </div>
+                          <div className="absolute inset-0 bg-violet-600/0 group-hover:bg-violet-600/5 transition-colors" />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-16 relative w-full max-w-2xl mx-auto flex flex-col items-center">
+                    {processing.resultType === 'zip' ? (
                   <div className="flex -space-x-12 hover:space-x-4 transition-all duration-700">
                     {(processing.previewGallery || [null, null, null]).slice(0, 3).map((src, i) => (
                       <div key={i} className="w-48 h-64 bg-white rounded-3xl shadow-2xl border-4 border-white rotate-[-5deg] transform hover:rotate-0 hover:-translate-y-4 transition-all overflow-hidden flex items-center justify-center">
@@ -624,19 +783,25 @@ const ToolPage: React.FC = () => {
                 )}
               </div>
 
-              <h2 className="text-6xl font-black text-gray-900 mb-4 tracking-tighter mt-8">Success!</h2>
-              <p className="text-gray-400 font-bold text-lg mb-12 uppercase tracking-widest">{t.toolPage.securityNote}</p>
-              
-              <div className="w-full max-w-md space-y-6">
-                <a href={processing.downloadUrl} download={`PDFToolkitPro_${tool.id}_Result`} className="w-full py-7 bg-blue-600 text-white rounded-[2.5rem] font-black text-2xl flex items-center justify-center shadow-[0_25px_50px_-12px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition-all transform hover:-translate-y-2 group">
-                  <Download className="mr-5 w-8 h-8 group-hover:animate-bounce" /> {t.toolPage.grabFile}
-                </a>
-                <button onClick={() => setProcessing({ status: 'idle', progress: 0 })} className="w-full py-6 bg-gray-50 text-gray-900 rounded-[2.5rem] font-black text-xl border-2 border-transparent hover:border-gray-200 transition-all flex items-center justify-center">
-                  <RotateCw className="w-6 h-6 mr-3 text-gray-400" /> Start Another
-                </button>
-              </div>
-            </div>
+              {!isExtractImages && (
+                <>
+                  <h2 className="text-6xl font-black text-gray-900 mb-4 tracking-tighter mt-8">Success!</h2>
+                  <p className="text-gray-400 font-bold text-lg mb-12 uppercase tracking-widest">{t.toolPage.securityNote}</p>
+                  
+                  <div className="w-full max-w-md space-y-6">
+                    <a href={processing.downloadUrl} download={`PDFToolkitPro_${tool.id}_Result`} className="w-full py-7 bg-blue-600 text-white rounded-[2.5rem] font-black text-2xl flex items-center justify-center shadow-[0_25px_50px_-12px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition-all transform hover:-translate-y-2 group">
+                      <Download className="mr-5 w-8 h-8 group-hover:animate-bounce" /> {t.toolPage.grabFile}
+                    </a>
+                    <button onClick={() => setProcessing({ status: 'idle', progress: 0 })} className="w-full py-6 bg-gray-50 text-gray-900 rounded-[2.5rem] font-black text-xl border-2 border-transparent hover:border-gray-200 transition-all flex items-center justify-center">
+                      <RotateCw className="w-6 h-6 mr-3 text-gray-400" /> Start Another
+                    </button>
+                  </div>
+                </>
+              )}
+            </>
           )}
+        </div>
+      )}
 
           {processing.status === 'error' && (
             <div className="py-24 flex flex-col items-center text-center animate-in zoom-in-95 duration-500">

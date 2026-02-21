@@ -18,7 +18,8 @@ export type ToolType =
   | 'encrypt-pdf'
   | 'add-dynamic-alert'
   | 'add-advanced-annotation'
-  | 'rearrange-pdf';
+  | 'rearrange-pdf'
+  | 'extract-images';
 
 export interface PDFTool {
   id: ToolType;

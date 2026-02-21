@@ -47,9 +47,19 @@ export const API_ENDPOINTS = {
   ADD_DYNAMIC_ALERT: `${API_BASE_URL}/AddDynamicAlert`,
   ADD_ADVANCED_ANNOTATION: `${API_BASE_URL}/AddAdvancedAnnotation`,
   REARRANGE_PDF: `${API_BASE_URL}/RearrangePdfPages`,
+  EXTRACT_IMAGES: `${API_BASE_URL}/ExtractImages`,
 };
 
 export const TOOLS: (PDFTool & { titleKey: string; descKey: string })[] = [
+  {
+    id: 'extract-images',
+    title: 'Extract Images from URL',
+    titleKey: 'extractImages',
+    description: 'Download all images from any website URL as a ZIP file.',
+    descKey: 'extractImagesDesc',
+    icon: <ImagePlus className="w-8 h-8" />,
+    color: 'bg-violet-600'
+  },
   {
     id: 'img-to-pdf',
     title: 'Images to PDF',
