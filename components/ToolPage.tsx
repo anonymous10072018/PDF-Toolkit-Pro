@@ -271,7 +271,12 @@ const ToolPage: React.FC = () => {
 
       let previews: string[] = [];
       if (resultType === 'pdf') {
-        previews = await generatePreviews(blob);
+        if (tool.id === 'img-to-pdf') {
+          // Use original images for preview - much faster!
+          previews = files.slice(0, 3).map(f => URL.createObjectURL(f));
+        } else {
+          previews = await generatePreviews(blob);
+        }
       } else if (resultType === 'zip') {
         if (isExtractImages) {
           const zip = await JSZip.loadAsync(blob);
@@ -734,19 +739,37 @@ const ToolPage: React.FC = () => {
               ) : (
                 <>
                   <div className="mb-16 relative w-full max-w-2xl mx-auto flex flex-col items-center">
-                    {processing.resultType === 'zip' ? (
+                    {processing.resultType === 'zip' || (tool?.id === 'img-to-pdf' && files.length > 1) ? (
                   <div className="flex -space-x-12 hover:space-x-4 transition-all duration-700">
                     {(processing.previewGallery || [null, null, null]).slice(0, 3).map((src, i) => (
-                      <div key={i} className="w-48 h-64 bg-white rounded-3xl shadow-2xl border-4 border-white rotate-[-5deg] transform hover:rotate-0 hover:-translate-y-4 transition-all overflow-hidden flex items-center justify-center">
+                      <motion.div 
+                        key={i} 
+                        initial={{ opacity: 0, scale: 0.5, rotate: -20 }}
+                        animate={{ opacity: 1, scale: 1, rotate: -5 }}
+                        transition={{ duration: 0.8, delay: i * 0.2, type: "spring" }}
+                        className="w-48 h-64 bg-white rounded-3xl shadow-2xl border-4 border-white transform hover:rotate-0 hover:-translate-y-4 transition-all overflow-hidden flex items-center justify-center"
+                      >
                         {src ? <img src={src} className="w-full h-full object-cover" alt="Preview" /> : <div className="bg-gray-50 w-full h-full flex items-center justify-center"><FileText className="w-12 h-12 text-gray-200" /></div>}
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 ) : (
-                  <div className="relative group perspective-1000">
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 1, type: "spring" }}
+                    className="relative group perspective-1000"
+                  >
                     <div className="w-64 h-80 bg-white rounded-[2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border-4 border-white overflow-hidden transform group-hover:rotate-y-12 transition-transform duration-700">
                       {processing.previewUrl ? (
-                         <img src={processing.previewUrl} className="w-full h-full object-cover" alt="Result Poster" />
+                         <motion.img 
+                           initial={{ opacity: 0 }}
+                           animate={{ opacity: 1 }}
+                           transition={{ duration: 1.5 }}
+                           src={processing.previewUrl} 
+                           className="w-full h-full object-cover" 
+                           alt="Result Poster" 
+                         />
                       ) : (
                         <div className="w-full h-full bg-blue-50 flex flex-col items-center justify-center p-8">
                           <FileText className="w-20 h-20 text-blue-200 mb-4" />
@@ -757,7 +780,7 @@ const ToolPage: React.FC = () => {
                     <div className="absolute -bottom-8 -right-8 bg-blue-600 text-white p-6 rounded-[2.5rem] shadow-2xl animate-bounce border-8 border-white">
                       <Download className="w-10 h-10" />
                     </div>
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* Compression Statistics Display */}
@@ -792,7 +815,7 @@ const ToolPage: React.FC = () => {
                     <a href={processing.downloadUrl} download={`PDFToolkitPro_${tool.id}_Result`} className="w-full py-7 bg-blue-600 text-white rounded-[2.5rem] font-black text-2xl flex items-center justify-center shadow-[0_25px_50px_-12px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition-all transform hover:-translate-y-2 group">
                       <Download className="mr-5 w-8 h-8 group-hover:animate-bounce" /> {t.toolPage.grabFile}
                     </a>
-                    <button onClick={() => setProcessing({ status: 'idle', progress: 0 })} className="w-full py-6 bg-gray-50 text-gray-900 rounded-[2.5rem] font-black text-xl border-2 border-transparent hover:border-gray-200 transition-all flex items-center justify-center">
+                    <button onClick={() => { setProcessing({ status: 'idle', progress: 0 }); setFiles([]); }} className="w-full py-6 bg-gray-50 text-gray-900 rounded-[2.5rem] font-black text-xl border-2 border-transparent hover:border-gray-200 transition-all flex items-center justify-center">
                       <RotateCw className="w-6 h-6 mr-3 text-gray-400" /> Start Another
                     </button>
                   </div>

@@ -60,6 +60,10 @@ const FilePreviewCard: React.FC<{
         }
       };
       generateThumbnail();
+    } else if (file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file);
+      setThumbnail(url);
+      return () => URL.revokeObjectURL(url);
     }
     return () => { isMounted = false; };
   }, [file]);
@@ -71,11 +75,11 @@ const FilePreviewCard: React.FC<{
       onDragOver={(e) => onDragOver(e, index)}
       onDragEnd={onDragEnd}
       onDrop={(e) => onDrop(e, index)}
-      className={`group relative flex flex-col bg-white rounded-2xl border transition-all duration-500 overflow-hidden
-        ${isDraggingItem ? 'opacity-0 scale-90 grayscale' : 'border-gray-100 shadow-sm hover:shadow-2xl hover:border-blue-400'}
+      className={`group relative flex flex-col bg-white rounded-[2rem] border-4 transition-all duration-500 overflow-hidden
+        ${isDraggingItem ? 'opacity-0 scale-90 grayscale' : 'border-gray-100 shadow-sm hover:shadow-2xl hover:border-blue-400 hover:-translate-y-2'}
         ${showReorder ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
-      <div className="relative aspect-[3/4] bg-gray-50 flex items-center justify-center overflow-hidden border-b border-gray-100">
+      <div className="relative aspect-[3/4] bg-gray-50 flex items-center justify-center overflow-hidden">
         {thumbnail ? (
           <img src={thumbnail} alt={file.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" />
         ) : loading ? (
