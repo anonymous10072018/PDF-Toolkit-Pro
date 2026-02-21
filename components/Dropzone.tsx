@@ -50,7 +50,7 @@ const FilePreviewCard: React.FC<{
           if (context) {
             canvas.height = viewport.height;
             canvas.width = viewport.width;
-            await page.render({ canvasContext: context, viewport, canvas }).promise;
+            await page.render({ canvasContext: context, viewport }).promise;
             if (isMounted) setThumbnail(canvas.toDataURL());
           }
         } catch (e) {

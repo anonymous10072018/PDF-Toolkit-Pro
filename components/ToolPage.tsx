@@ -56,6 +56,7 @@ const ToolPage: React.FC = () => {
   const [pageSequence, setPageSequence] = useState<number[]>([]);
   const [loadingThumbnails, setLoadingThumbnails] = useState(false);
   const [totalPagesFound, setTotalPagesFound] = useState<number>(1);
+  const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
   
   const [processing, setProcessing] = useState<ProcessingState>({
     status: 'idle',
@@ -73,6 +74,8 @@ const ToolPage: React.FC = () => {
   const isEncryption = useMemo(() => tool?.id === 'encrypt-pdf', [tool?.id]);
   const isAlert = useMemo(() => tool?.id === 'add-dynamic-alert', [tool?.id]);
   const isCompression = useMemo(() => tool?.id === 'compress-pdf', [tool?.id]);
+  const isBooklet = useMemo(() => tool?.id === 'booklet-pdf', [tool?.id]);
+  const isPdfToImg = useMemo(() => tool?.id === 'pdf-to-img', [tool?.id]);
 
   const relatedTools = useMemo(() => {
     return TOOLS.filter(item => item.id !== id).slice(0, 3);
@@ -113,7 +116,7 @@ const ToolPage: React.FC = () => {
               const vp = page.getViewport({ scale: 0.4 });
               const canvas = document.createElement('canvas');
               canvas.height = vp.height; canvas.width = vp.width;
-              await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp, canvas }).promise;
+              await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp }).promise;
               thumbs.push({ index: i - 1, url: canvas.toDataURL('image/jpeg', 0.8) });
               sequence.push(i - 1);
             }
@@ -136,6 +139,26 @@ const ToolPage: React.FC = () => {
   }, [tool, navigate]);
 
   if (!tool) return null;
+
+  const handleDragStart = (index: number) => {
+    setDraggedItemIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedItemIndex === null || draggedItemIndex === index) return;
+    
+    const newSequence = [...pageSequence];
+    const item = newSequence.splice(draggedItemIndex, 1)[0];
+    newSequence.splice(index, 0, item);
+    
+    setPageSequence(newSequence);
+    setDraggedItemIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItemIndex(null);
+  };
 
   const handleProcess = async () => {
     if (files.length === 0) return;
@@ -164,7 +187,7 @@ const ToolPage: React.FC = () => {
       }
 
       // Apply User Customizations
-      if (tool.id === 'word-to-images') formData.append('format', imgFormat);
+      if (['word-to-images', 'pdf-to-img'].includes(tool.id)) formData.append('format', imgFormat);
       if (isWatermark) formData.append('watermarkText', watermarkText);
       if (isEncryption) formData.append('userPassword', userPassword || 'PDFTOOLKITPRO');
       if (isAlert) formData.append('alertMessage', alertMessage);
@@ -199,7 +222,9 @@ const ToolPage: React.FC = () => {
       
       setProcessing(prev => ({ ...prev, progress: 70, message: t.toolPage.finalizing }));
 
-      if (tool.id === 'word-to-images' || tool.id === 'split-pdf') {
+      const contentType = response.headers.get('content-type')?.toLowerCase() || '';
+
+      if (contentType.includes('application/json')) {
         const data = await response.json(); 
         const zip = new JSZip();
         const previews: string[] = [];
@@ -225,9 +250,16 @@ const ToolPage: React.FC = () => {
       }
 
       const blob = await response.blob();
-      const contentType = response.headers.get('content-type')?.toLowerCase() || '';
-      let resultType: 'pdf' | 'word' = contentType.includes('word') ? 'word' : 'pdf';
-      const previews = resultType === 'pdf' ? await generatePreviews(blob) : [];
+      let resultType: 'pdf' | 'word' | 'zip' = 'pdf';
+      if (contentType.includes('word')) resultType = 'word';
+      else if (contentType.includes('zip') || contentType.includes('octet-stream')) resultType = 'zip';
+
+      let previews: string[] = [];
+      if (resultType === 'pdf') {
+        previews = await generatePreviews(blob);
+      } else if (resultType === 'zip') {
+        previews = await getPreviewsFromZip(blob);
+      }
 
       setProcessing({ 
         status: 'success', 
@@ -252,6 +284,26 @@ const ToolPage: React.FC = () => {
     }
   };
 
+  const getPreviewsFromZip = async (blob: Blob): Promise<string[]> => {
+    try {
+      const zip = await JSZip.loadAsync(blob);
+      const files = Object.values(zip.files).filter(f => 
+        !f.dir && (f.name.toLowerCase().endsWith('.jpg') || f.name.toLowerCase().endsWith('.jpeg') || f.name.toLowerCase().endsWith('.png'))
+      );
+      const previews: string[] = [];
+      for (let i = 0; i < Math.min(files.length, 3); i++) {
+        const content = await files[i].async('base64');
+        const ext = files[i].name.split('.').pop()?.toLowerCase();
+        const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
+        previews.push(`data:${mime};base64,${content}`);
+      }
+      return previews;
+    } catch (e) {
+      console.error("Error unzipping for previews:", e);
+      return [];
+    }
+  };
+
   const generatePreviews = async (blob: Blob): Promise<string[]> => {
     try {
       if (blob.type !== 'application/pdf') return [];
@@ -263,7 +315,7 @@ const ToolPage: React.FC = () => {
         const vp = page.getViewport({ scale: 1.0 });
         const canvas = document.createElement('canvas');
         canvas.height = vp.height; canvas.width = vp.width;
-        await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp, canvas }).promise;
+        await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp }).promise;
         res.push(canvas.toDataURL('image/jpeg', 0.8));
       }
       return res;
@@ -394,6 +446,41 @@ const ToolPage: React.FC = () => {
                     <textarea value={alertMessage} onChange={(e) => setAlertMessage(e.target.value)} className="w-full px-8 py-6 bg-white border border-indigo-100 rounded-3xl font-bold text-lg text-gray-900 min-h-[120px] focus:ring-2 focus:ring-indigo-400 focus:outline-none resize-none" />
                   </div>
                 )}
+
+                {isBooklet && (
+                  <div className="bg-teal-50/50 p-10 rounded-[3rem] border border-teal-100 shadow-sm">
+                    <div className="flex items-center mb-6">
+                      <div className="bg-white p-4 rounded-2xl mr-6 text-teal-600 shadow-sm"><Printer className="w-6 h-6" /></div>
+                      <h3 className="text-2xl font-black text-gray-900 tracking-tight">{t.toolPage.bookletTipTitle}</h3>
+                    </div>
+                    <div className="bg-white p-8 rounded-3xl border border-teal-50">
+                      <p className="text-teal-900 font-bold text-lg leading-relaxed">{t.toolPage.bookletTipDesc}</p>
+                    </div>
+                  </div>
+                )}
+
+                {(tool.id === 'word-to-images' || tool.id === 'pdf-to-img') && (
+                  <div className="bg-orange-50/50 p-10 rounded-[3rem] border border-orange-100 shadow-sm">
+                    <div className="flex items-center mb-6">
+                      <div className="bg-white p-4 rounded-2xl mr-6 text-orange-600 shadow-sm"><ImageIcon className="w-6 h-6" /></div>
+                      <h3 className="text-2xl font-black text-gray-900 tracking-tight">Output Image Format</h3>
+                    </div>
+                    <div className="flex gap-6">
+                      <button 
+                        onClick={() => setImgFormat('jpeg')} 
+                        className={`flex-1 py-5 rounded-3xl font-black text-lg transition-all border-2 ${imgFormat === 'jpeg' ? 'bg-orange-600 text-white border-orange-600 shadow-xl' : 'bg-white text-gray-400 border-gray-100 hover:border-orange-200'}`}
+                      >
+                        {t.toolPage.jpgFormat}
+                      </button>
+                      <button 
+                        onClick={() => setImgFormat('png')} 
+                        className={`flex-1 py-5 rounded-3xl font-black text-lg transition-all border-2 ${imgFormat === 'png' ? 'bg-orange-600 text-white border-orange-600 shadow-xl' : 'bg-white text-gray-400 border-gray-100 hover:border-orange-200'}`}
+                      >
+                        {t.toolPage.pngFormat}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {isImageWatermark && (
@@ -440,7 +527,14 @@ const ToolPage: React.FC = () => {
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
                       {pageSequence.map((pageIdx, sequenceIdx) => (
-                        <div key={pageIdx} className="group relative flex flex-col bg-white rounded-[2rem] border-2 border-gray-100 hover:border-cyan-400 hover:shadow-2xl overflow-hidden cursor-grab active:cursor-grabbing transition-all">
+                        <div 
+                          key={pageIdx} 
+                          draggable
+                          onDragStart={() => handleDragStart(sequenceIdx)}
+                          onDragOver={(e) => handleDragOver(e, sequenceIdx)}
+                          onDragEnd={handleDragEnd}
+                          className={`group relative flex flex-col bg-white rounded-[2rem] border-2 ${draggedItemIndex === sequenceIdx ? 'opacity-50 border-cyan-600 scale-95' : 'border-gray-100 hover:border-cyan-400 hover:shadow-2xl'} overflow-hidden cursor-grab active:cursor-grabbing transition-all`}
+                        >
                           <div className="aspect-[3/4] bg-gray-50 flex items-center justify-center relative overflow-hidden">
                             <img src={pageThumbnails.find(t=>t.index===pageIdx)?.url} className="w-full h-full object-cover" alt={`Page ${pageIdx + 1}`} />
                             <div className="absolute top-4 left-4 w-10 h-10 bg-cyan-600 text-white rounded-2xl flex items-center justify-center font-black shadow-lg border border-white/20">{sequenceIdx + 1}</div>
